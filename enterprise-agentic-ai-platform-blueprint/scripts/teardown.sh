@@ -56,6 +56,14 @@ set -euo pipefail
 DRY_RUN=false
 RESTRICT_STACKS=()
 CDK_CONTEXT_ARGS=()
+# Initialized here so is_blocked_producer() can safely iterate even before
+# destroy_planned_stacks() runs (bash 3.2 on macOS treats unset arrays as
+# unbound variables under set -u).
+BLOCKED_PRODUCERS=()
+PLANNED_STACKS=()
+STACK_STATUS=()
+RESULTS=()
+GENERATED_SERVICE_LOG_RESOURCES=()
 
 TENANT_ID="${AGENTICAI_TENANT_ID:-demo}"
 AGENT_ID="${AGENTICAI_AGENT_ID:-primary}"
@@ -485,7 +493,7 @@ append_service_log_resource() {
     *) return 0 ;;
   esac
 
-  for entry in "${GENERATED_SERVICE_LOG_RESOURCES[@]}"; do
+  for entry in ${GENERATED_SERVICE_LOG_RESOURCES[@]+"${GENERATED_SERVICE_LOG_RESOURCES[@]}"}; do
     IFS=$'\t' read -r _ _ existing_group <<<"$entry"
     [ "$existing_group" = "$group" ] && return 0
   done
@@ -603,7 +611,7 @@ ensure_service_resource_absent() {
 
 cleanup_service_log_groups() {
   local entry resource_type physical_id group out failures=0
-  for entry in "${GENERATED_SERVICE_LOG_RESOURCES[@]}"; do
+  for entry in ${GENERATED_SERVICE_LOG_RESOURCES[@]+"${GENERATED_SERVICE_LOG_RESOURCES[@]}"}; do
     IFS=$'\t' read -r resource_type physical_id group <<<"$entry"
     if ! ensure_service_resource_absent "$resource_type" "$physical_id"; then
       failures=$((failures + 1))
@@ -664,7 +672,9 @@ blocked_producers_for() {
 
 is_blocked_producer() {
   local candidate="$1" blocked
-  for blocked in "${BLOCKED_PRODUCERS[@]}"; do
+  # bash 3.2 (macOS default) treats an empty array as unbound under set -u;
+  # the ${arr[@]+"${arr[@]}"} expansion is the portable null-safe idiom.
+  for blocked in ${BLOCKED_PRODUCERS[@]+"${BLOCKED_PRODUCERS[@]}"}; do
     [ "$blocked" = "$candidate" ] && return 0
   done
   return 1
@@ -717,7 +727,7 @@ print_summary() {
   printf '\n'
   printf '%s\n' '------------------------------------------------------------'
   printf 'Teardown result\n'
-  for line in "${RESULTS[@]}"; do
+  for line in ${RESULTS[@]+"${RESULTS[@]}"}; do
     printf '  %s\n' "$line"
   done
   printf '\nRemaining manual steps:\n'

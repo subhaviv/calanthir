@@ -25,6 +25,16 @@ import { Construct } from 'constructs';
 
 import { AgentCoreRuntimeConstruct } from './runtime-construct';
 
+export interface AgentCoreRuntimeJwtAuthorizerProps {
+  /**
+   * Cognito issuer URL — `https://cognito-idp.<region>.amazonaws.com/<poolId>`.
+   * Can be cross-account: AgentCore fetches the public JWKS endpoint.
+   */
+  readonly issuerUrl: string;
+  /** Audience values the token must contain (Cognito app-client IDs). */
+  readonly allowedClients: readonly string[];
+}
+
 export interface AgentCoreRuntimeProvisionerProps {
   /** The sibling construct that holds the execution role and ECR repo. */
   readonly runtimeConstruct: AgentCoreRuntimeConstruct;
@@ -49,6 +59,12 @@ export interface AgentCoreRuntimeProvisionerProps {
   readonly networkMode?: 'PUBLIC' | 'VPC';
   /** Agent runtime name — must match [a-zA-Z][a-zA-Z0-9_]{0,47}. */
   readonly agentRuntimeName: string;
+  /**
+   * Optional JWT authorizer. When supplied, callers may authenticate with a
+   * Cognito access token (Bearer) in addition to IAM/SigV4. The runtime
+   * accepts both paths simultaneously.
+   */
+  readonly jwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
 }
 
 export class AgentCoreRuntimeProvisioner extends Construct {
@@ -90,6 +106,31 @@ export class AgentCoreRuntimeProvisioner extends Construct {
       }),
     ]);
 
+    const authorizerConfig = props.jwtAuthorizer
+      ? {
+          customJWTAuthorizer: {
+            discoveryUrl: props.jwtAuthorizer.issuerUrl,
+            allowedClients: props.jwtAuthorizer.allowedClients,
+          },
+        }
+      : undefined;
+
+    const runtimeParams = {
+      agentRuntimeName: props.agentRuntimeName,
+      description: props.description,
+      agentRuntimeArtifact: {
+        containerConfiguration: {
+          containerUri: props.containerImageUri,
+        },
+      },
+      networkConfiguration: { networkMode },
+      roleArn: rc.executionRole.roleArn,
+      ...(props.environmentVariables && {
+        environmentVariables: props.environmentVariables,
+      }),
+      ...(authorizerConfig && { authorizerConfiguration: authorizerConfig }),
+    };
+
     const cr = new AwsCustomResource(this, 'RuntimeCr', {
       resourceType: 'Custom::AgentCoreRuntime',
       installLatestAwsSdk: false,
@@ -97,19 +138,21 @@ export class AgentCoreRuntimeProvisioner extends Construct {
       onCreate: {
         service: 'bedrock-agentcore-control',
         action: 'CreateAgentRuntime',
+        parameters: runtimeParams,
+        physicalResourceId: PhysicalResourceId.fromResponse('agentRuntimeId'),
+      },
+      onUpdate: {
+        service: 'bedrock-agentcore-control',
+        action: 'UpdateAgentRuntime',
         parameters: {
-          agentRuntimeName: props.agentRuntimeName,
-          description: props.description,
-          agentRuntimeArtifact: {
-            containerConfiguration: {
-              containerUri: props.containerImageUri,
-            },
-          },
-          networkConfiguration: { networkMode },
-          roleArn: rc.executionRole.roleArn,
+          agentRuntimeId: new PhysicalResourceIdReference(),
+          agentRuntimeArtifact: runtimeParams.agentRuntimeArtifact,
+          networkConfiguration: runtimeParams.networkConfiguration,
+          roleArn: runtimeParams.roleArn,
           ...(props.environmentVariables && {
             environmentVariables: props.environmentVariables,
           }),
+          ...(authorizerConfig && { authorizerConfiguration: authorizerConfig }),
         },
         physicalResourceId: PhysicalResourceId.fromResponse('agentRuntimeId'),
       },
@@ -117,8 +160,6 @@ export class AgentCoreRuntimeProvisioner extends Construct {
         service: 'bedrock-agentcore-control',
         action: 'DeleteAgentRuntime',
         parameters: {
-          // PhysicalResourceIdReference is substituted by the AwsCustomResource
-          // Lambda with the physical ID (agentRuntimeId) captured during onCreate.
           agentRuntimeId: new PhysicalResourceIdReference(),
         },
         ignoreErrorCodesMatching: 'ResourceNotFoundException',

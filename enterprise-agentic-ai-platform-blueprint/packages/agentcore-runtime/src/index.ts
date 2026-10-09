@@ -21,4 +21,5 @@ export {
 export {
   AgentCoreRuntimeProvisioner,
   type AgentCoreRuntimeProvisionerProps,
+  type AgentCoreRuntimeJwtAuthorizerProps,
 } from './runtime-provisioner';

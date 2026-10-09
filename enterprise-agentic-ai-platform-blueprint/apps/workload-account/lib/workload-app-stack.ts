@@ -24,6 +24,7 @@ import { AgentCoreGatewayConstruct, ApiGatewayFronting } from '@agenticai/agentc
 import { AgentCoreIdentityConstruct } from '@agenticai/agentcore-identity';
 import { AgenticApp } from '@agenticai/agentic-app';
 import { AgentCoreRuntimeProvisioner } from '@agenticai/agentcore-runtime';
+import type { AgentCoreRuntimeJwtAuthorizerProps } from '@agenticai/agentcore-runtime';
 import { RagKnowledgeBaseConstruct } from '@agenticai/rag';
 import {
   OamSourceLinkConstruct,
@@ -90,6 +91,12 @@ export interface WorkloadAppStackProps extends StackProps {
   readonly benefitsQaImageUri?: string;
   /** Guardrail ID to inject into the benefits-qa runtime container. */
   readonly benefitsQaGuardrailId?: string;
+  /**
+   * JWT authorizer for the benefits-qa runtime. When supplied, callers may
+   * authenticate with a Cognito Bearer token in addition to IAM/SigV4.
+   * Typically points at the loom-user-pool (cross-account).
+   */
+  readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
 }
 
 export class WorkloadAppStack extends Stack {
@@ -167,6 +174,7 @@ export class WorkloadAppStack extends Stack {
         agentRuntimeName: `benefitsQa${props.envName}`,
         description: 'PPO Benefits Q&A agent for member service representatives',
         networkMode: 'PUBLIC',
+        jwtAuthorizer: props.benefitsQaJwtAuthorizer,
         environmentVariables: {
           INFERENCE_PROFILE_ARN: this.app.inferenceProfile.attrInferenceProfileArn,
           GUARDRAIL_IDENTIFIER: props.benefitsQaGuardrailId ?? '',

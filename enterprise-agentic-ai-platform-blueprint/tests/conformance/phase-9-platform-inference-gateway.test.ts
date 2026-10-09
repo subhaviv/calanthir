@@ -119,7 +119,10 @@ describe('Phase 9 — native Platform inference Gateway', () => {
     );
     expect(gateway.ProtocolType).toBe('MCP');
     expect(gateway.ProtocolConfiguration).toEqual({
-      Mcp: { SupportedVersions: ['2025-11-25'] },
+      Mcp: {
+        SupportedVersions: ['2025-11-25'],
+        StreamingConfiguration: { EnableResponseStreaming: true },
+      },
     });
     expect(gateway.AuthorizerType).toBe('CUSTOM_JWT');
     const authorizer = gateway.AuthorizerConfiguration as {

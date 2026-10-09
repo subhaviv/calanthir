@@ -600,6 +600,13 @@ switch (stage) {
             typeof app.node.tryGetContext("agenticai/benefitsQaGuardrailId") === "string"
               ? String(app.node.tryGetContext("agenticai/benefitsQaGuardrailId"))
               : undefined,
+          benefitsQaJwtAuthorizer:
+            typeof externalUserPoolId === "string" && typeof externalUserPoolClientId === "string"
+              ? {
+                  issuerUrl: `https://cognito-idp.${typeof externalUserPoolRegion === "string" ? externalUserPoolRegion : region}.amazonaws.com/${externalUserPoolId}`,
+                  allowedClients: [externalUserPoolClientId],
+                }
+              : undefined,
         },
       );
       appStack.addDependency(networkStack);
