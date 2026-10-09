@@ -108,57 +108,30 @@ export class RegistryStack extends Stack {
           ? String(this.node.tryGetContext("agenticai/benefitsQaRuntimeArn"))
           : `arn:aws:bedrock-agentcore:${this.region}:${props.workloadAccountIds[0]}:agent-runtime/benefits-qa-pending`;
 
-      const benefitsQaGovernance = {
-        schemaVersion: "agenticai.tool-governance/1.0",
-        catalogueVersion: "1",
-        toolId: "benefits-qa-agent",
-        description:
-          "PPO Benefits Q&A agent for member service representatives. " +
-          "Answers deductible, copay, OOP max, formulary, and network questions. " +
-          "Escalates coverage determinations and prior-auth decisions to a licensed reviewer.",
-        desiredApprovalStatus: "approved",
-        target: {
-          type: "agent-a2a",
-          arn: runtimeArn,
-        },
-        mcp: {
-          toolName: "benefits-qa-agent",
-          description: "Query PPO plan benefits for member service representatives.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              messages: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    role: { type: "string", enum: ["user", "assistant"] },
-                    content: { type: "string" },
-                  },
-                  required: ["role", "content"],
-                },
-                description: "Conversation history for this session.",
-              },
-              actorId: {
-                type: "string",
-                description: "MSR employee ID or SSO subject — required for audit.",
-              },
-            },
-            required: ["messages", "actorId"],
+      const agentDescription =
+        "PPO Benefits Q&A agent for member service representatives. " +
+        "Answers deductible, copay, OOP max, formulary, and network questions. " +
+        "Escalates coverage determinations and prior-auth decisions to a licensed reviewer.";
+
+      // A2A agent card — RecordType AGENT, Descriptors.A2aAgentCard shape.
+      // dataSchemaVersion "0.3" is the live-verified GA value (Loom aws_agent_registry.py).
+      const a2aCard = {
+        protocolVersion: "0.3",
+        name: "benefits-qa-agent",
+        description: agentDescription.slice(0, 100),
+        version: "1.0",
+        url: props.benefitsQaA2aEndpointUrl,
+        capabilities: { streaming: true },
+        skills: [
+          {
+            id: "benefits-qa",
+            name: "Benefits Q&A",
+            description: "Answer PPO deductible, copay, OOP max, formulary and network questions.",
+            tags: ["benefits", "payor", "member-services"],
           },
-        },
-        authorization: {
-          defaultDecision: "DENY",
-          cedarPolicy:
-            'permit(principal in AgenticAI::Group::"member-services-reps", action, resource);',
-          allowedSubjects: [],
-          allowedGroups: ["member-services-reps"],
-          combination: "GROUP_ONLY",
-        },
-        ownership: {
-          ownerTeam: "member-services",
-          costCentre: props.costCentre,
-        },
+        ],
+        defaultInputModes: ["text"],
+        defaultOutputModes: ["text"],
       };
 
       const benefitsQaRecord = new CfnResource(this, "BenefitsQaAgentRecord", {
@@ -167,11 +140,14 @@ export class RegistryStack extends Stack {
           RegistryId: this.gaRegistry.registryId,
           Name: "benefits-qa-agent",
           DisplayName: "Benefits Q&A Agent",
-          Description: benefitsQaGovernance.description,
-          RecordType: "CUSTOM",
+          Description: agentDescription,
+          RecordType: "AGENT",
           RecordVersion: "1.0.0",
           Descriptors: {
-            Custom: { Data: JSON.stringify(benefitsQaGovernance) },
+            A2aAgentCard: {
+              Data: Buffer.from(JSON.stringify(a2aCard)).toString("base64"),
+              DataSchemaVersion: "0.3",
+            },
           },
           Tags: [
             { Key: "application-id", Value: props.applicationId },
