@@ -221,3 +221,91 @@ def test_large_prompt_is_evaluated_in_multiple_calls(bedrock):
     assert result == index.passthrough()
     assert len(bedrock.calls) >= 3
     assert sum(len(c["text"]["text"]) for call in bedrock.calls for c in call["content"]) == 55_000
+
+
+# --------------------------------------------------------------------------- #
+# session.id correlation (baggage header)
+# --------------------------------------------------------------------------- #
+def _event_with_headers(body, headers, path="/inference/v1/chat/completions", method="POST"):
+    return {
+        "interceptorInputVersion": "1.0",
+        "http": {
+            "gatewayRequest": {
+                "path": path,
+                "httpMethod": method,
+                "body": body,
+                "headers": headers,
+            }
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "headers,expected",
+    [
+        ({"baggage": "session.id=abc-123"}, "abc-123"),
+        ({"Baggage": "session.id=abc-123"}, "abc-123"),  # case-insensitive header name
+        ({"baggage": "foo=bar,session.id=sid-9,baz=qux"}, "sid-9"),  # among other members
+        ({"baggage": "session.id=sid-9;meta=1"}, "sid-9"),  # strip W3C properties suffix
+        ({"baggage": "session.id= trimmed "}, "trimmed"),  # whitespace trimmed
+        ({"baggage": "foo=bar"}, ""),  # no session.id member
+        ({}, ""),  # no baggage header
+        ({"baggage": ""}, ""),  # empty baggage
+    ],
+)
+def test_session_id_extraction(headers, expected):
+    request = {"headers": headers}
+    assert index._session_id(request) == expected
+
+
+def test_session_id_missing_headers_is_safe():
+    assert index._session_id({}) == ""
+    assert index._session_id({"headers": None}) == ""
+    assert index._session_id({"headers": "not-a-dict"}) == ""
+
+
+def test_allowed_decision_logs_session_id(monkeypatch, bedrock, caplog):
+    event = _event_with_headers(
+        _b64({"messages": [{"role": "user", "content": "hello"}]}),
+        {"baggage": "session.id=join-key-42"},
+    )
+    with caplog.at_level("INFO"):
+        index.handler(event, None)
+    record = json.loads(caplog.records[-1].message)
+    assert record["decision"] == "allowed"
+    assert record["sessionId"] == "join-key-42"
+
+
+def test_blocked_decision_logs_session_id(monkeypatch, caplog):
+    fake = FakeBedrock(
+        action="GUARDRAIL_INTERVENED",
+        assessments=[{"sensitiveInformationPolicy": {"piiEntities": [
+            {"type": "US_SOCIAL_SECURITY_NUMBER", "action": "BLOCKED"}]}}],
+    )
+    monkeypatch.setattr(index, "_bedrock_runtime", lambda: fake)
+    event = _event_with_headers(
+        _b64({"messages": [{"role": "user", "content": "my ssn is 123-45-6789"}]}),
+        {"baggage": "session.id=join-key-43"},
+    )
+    with caplog.at_level("INFO"):
+        result = index.handler(event, None)
+    status, _ = _response(result)
+    assert status == 403
+    record = json.loads(caplog.records[-1].message)
+    assert record["decision"] == "blocked"
+    assert record["sessionId"] == "join-key-43"
+
+
+def test_log_never_contains_request_text_or_token(monkeypatch, bedrock, caplog):
+    """The correlation id is logged; the request text and any bearer token are not."""
+    secret_text = "patient diagnosis confidential"
+    event = _event_with_headers(
+        _b64({"messages": [{"role": "user", "content": secret_text}]}),
+        {"baggage": "session.id=k9", "authorization": "Bearer super-secret-jwt"},
+    )
+    with caplog.at_level("INFO"):
+        index.handler(event, None)
+    blob = "\n".join(r.message for r in caplog.records)
+    assert "k9" in blob  # correlation id present
+    assert secret_text not in blob  # request text never logged
+    assert "super-secret-jwt" not in blob  # bearer token never logged

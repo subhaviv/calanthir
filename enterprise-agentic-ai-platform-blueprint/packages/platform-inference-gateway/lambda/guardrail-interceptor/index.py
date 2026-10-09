@@ -327,6 +327,37 @@ def _request_id(context: Any) -> str:
         return ""
 
 
+def _session_id(request: dict[str, Any]) -> str:
+    """Extract ``session.id`` from the inbound W3C ``baggage`` header.
+
+    The invoking runtime stamps ``baggage: session.id=<uuid>`` on the request
+    (and the gateway now forwards headers to this interceptor). We record that
+    id on the decision log as the single CORRELATION KEY that joins a gateway
+    guardrail decision to the end user audited at the runtime — never the user
+    identity itself, never a token. Returns "" when absent or unparseable.
+
+    ``baggage`` is a comma-separated list of ``key=value`` members
+    (W3C Baggage); we read only the ``session.id`` member and ignore the rest.
+    Header lookup is case-insensitive per RFC 9110.
+    """
+    headers = request.get("headers") or {}
+    if not isinstance(headers, dict):
+        return ""
+    baggage = ""
+    for k, v in headers.items():
+        if isinstance(k, str) and k.lower() == "baggage" and isinstance(v, str):
+            baggage = v
+            break
+    if not baggage:
+        return ""
+    for member in baggage.split(","):
+        name, _, value = member.strip().partition("=")
+        if name.strip() == "session.id":
+            # Strip any ``;properties`` suffix the W3C format allows.
+            return value.split(";", 1)[0].strip()
+    return ""
+
+
 def _log(decision: str, **fields: Any) -> None:
     LOGGER.info(json.dumps({"decision": decision, **fields}, default=str))
 
@@ -342,32 +373,33 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     path = request.get("path", "")
     method = request.get("httpMethod", "")
     rid = _request_id(context)
+    sid = _session_id(request)
 
     try:
         cfg = settings()
     except GuardrailUnavailable as exc:
-        _log("fail_closed_misconfigured", path=path, requestId=rid, reason=str(exc))
+        _log("fail_closed_misconfigured", path=path, requestId=rid, sessionId=sid, reason=str(exc))
         return short_circuit(503, "guardrail_unavailable", "Guardrail enforcement is not configured.")
 
     try:
         payload = decode_body(request.get("body"))
     except (ValueError, TypeError) as exc:
-        _log("rejected_invalid_body", path=path, requestId=rid, reason=type(exc).__name__)
+        _log("rejected_invalid_body", path=path, requestId=rid, sessionId=sid, reason=type(exc).__name__)
         return short_circuit(400, "invalid_request_error", "Request body must be a JSON object.")
 
     if payload is None:
         return passthrough()
     if not isinstance(payload, dict):
-        _log("rejected_invalid_body", path=path, requestId=rid, reason="not_an_object")
+        _log("rejected_invalid_body", path=path, requestId=rid, sessionId=sid, reason="not_an_object")
         return short_circuit(400, "invalid_request_error", "Request body must be a JSON object.")
 
     turns = extract_texts(payload)
     total = sum(len(turn) for turn in turns)
     if total == 0:
-        _log("passthrough_no_text", path=path, method=method, requestId=rid)
+        _log("passthrough_no_text", path=path, method=method, requestId=rid, sessionId=sid)
         return passthrough()
     if total > cfg["max_characters"]:
-        _log("fail_closed_too_large", path=path, requestId=rid, characters=total)
+        _log("fail_closed_too_large", path=path, requestId=rid, sessionId=sid, characters=total)
         return short_circuit(
             413,
             "guarded_input_too_large",
@@ -377,11 +409,11 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     try:
         blocked, tripped = apply_guardrail(turns, cfg)
     except GuardrailUnavailable as exc:
-        _log("fail_closed_guardrail_error", path=path, requestId=rid, reason=str(exc))
+        _log("fail_closed_guardrail_error", path=path, requestId=rid, sessionId=sid, reason=str(exc))
         return short_circuit(503, "guardrail_unavailable", "Guardrail evaluation is unavailable; request refused.")
 
     if blocked:
-        _log("blocked", path=path, requestId=rid, characters=total, tripped=tripped,
+        _log("blocked", path=path, requestId=rid, sessionId=sid, characters=total, tripped=tripped,
              guardrail=cfg["identifier"], version=cfg["version"])
         return short_circuit(
             403,
@@ -392,5 +424,5 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 "tripped": tripped,
             },
         )
-    _log("allowed", path=path, requestId=rid, characters=total, turns=len(turns))
+    _log("allowed", path=path, requestId=rid, sessionId=sid, characters=total, turns=len(turns))
     return passthrough()
