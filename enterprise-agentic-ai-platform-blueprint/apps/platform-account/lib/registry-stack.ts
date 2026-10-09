@@ -145,7 +145,7 @@ export class RegistryStack extends Stack {
           RecordVersion: "1.0.0",
           Descriptors: {
             A2aAgentCard: {
-              Data: Buffer.from(JSON.stringify(a2aCard)).toString("base64"),
+              Data: JSON.stringify(a2aCard),
               DataSchemaVersion: "0.3",
             },
           },
