@@ -545,6 +545,15 @@ switch (stage) {
       const monthlyBudgetUsd = app.node.tryGetContext(
         "agenticai/monthlyBudgetUsd",
       );
+      const externalUserPoolId = app.node.tryGetContext(
+        "agenticai/externalUserPoolId",
+      );
+      const externalUserPoolClientId = app.node.tryGetContext(
+        "agenticai/externalUserPoolClientId",
+      );
+      const externalUserPoolRegion = app.node.tryGetContext(
+        "agenticai/externalUserPoolRegion",
+      );
       const appStack = new WorkloadAppStack(
         app,
         "aifactory-calanthir-Workload-AppStack",
@@ -561,11 +570,16 @@ switch (stage) {
           availabilityZones: networkStack.vpc.vpc.availabilityZones,
           bedrockRuntimeVpceId:
             networkStack.vpc.endpoints.bedrockRuntime.vpcEndpointId,
-          vpceSecurityGroupId: networkStack.vpc.vpceEniSg.securityGroupId,
           envName,
           tenantId,
           agentId,
           costCentre,
+          externalUserPoolId:
+            typeof externalUserPoolId === "string" ? externalUserPoolId : undefined,
+          externalUserPoolClientId:
+            typeof externalUserPoolClientId === "string" ? externalUserPoolClientId : undefined,
+          externalUserPoolRegion:
+            typeof externalUserPoolRegion === "string" ? externalUserPoolRegion : undefined,
           auditOamSinkArn:
             typeof auditOamSinkArn === "string" ? auditOamSinkArn : undefined,
           notificationEmail:

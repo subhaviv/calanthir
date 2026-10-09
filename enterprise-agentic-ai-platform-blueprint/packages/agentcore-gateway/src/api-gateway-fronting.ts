@@ -26,7 +26,7 @@ import {
   CfnIntegration,
 } from 'aws-cdk-lib/aws-apigatewayv2';
 import { ISecurityGroup, IVpc, Peer, Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
-import { CfnWebACL, CfnWebACLAssociation, CfnLoggingConfiguration } from 'aws-cdk-lib/aws-wafv2';
+import { CfnWebACL, CfnLoggingConfiguration } from 'aws-cdk-lib/aws-wafv2';
 import { IUserPool } from 'aws-cdk-lib/aws-cognito';
 import { Key } from 'aws-cdk-lib/aws-kms';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -47,6 +47,13 @@ export interface ApiGatewayFrontingProps {
    * Client (audience) ID registered in the User Pool for this API.
    */
   readonly userPoolClientId: string;
+
+  /**
+   * AWS region of the Cognito User Pool. Defaults to the stack's region.
+   * Override when using a cross-account/cross-region pool (e.g. loom-user-pool
+   * in the platform account).
+   */
+  readonly userPoolRegion?: string;
 
   /**
    * Stage name. Default 'v1'.
@@ -96,13 +103,14 @@ export class ApiGatewayFronting extends Construct {
     });
 
     // ---- JWT authorizer (Cognito) ----
+    const userPoolRegion = props.userPoolRegion ?? stack.region;
     this.authorizer = new CfnAuthorizer(this, 'JwtAuthorizer', {
       apiId: this.api.ref,
       name: 'CognitoJwtAuthorizer',
       authorizerType: 'JWT',
       identitySource: ['$request.header.Authorization'],
       jwtConfiguration: {
-        issuer: `https://cognito-idp.${stack.region}.amazonaws.com/${props.userPool.userPoolId}`,
+        issuer: `https://cognito-idp.${userPoolRegion}.amazonaws.com/${props.userPool.userPoolId}`,
         audience: [props.userPoolClientId],
       },
     });
@@ -255,10 +263,10 @@ export class ApiGatewayFronting extends Construct {
       ],
     });
 
-    new CfnWebACLAssociation(this, 'WebAclAssociation', {
-      resourceArn: `arn:aws:apigateway:${stack.region}::/apis/${this.api.ref}/stages/${stageName}`,
-      webAclArn: this.webAcl.attrArn,
-    });
+    // WAFv2 WebACLAssociation is intentionally omitted: WAFv2 supports REST API (v1) only,
+    // not HTTP API v2. Rate-limit protection is handled at the Cognito JWT authorizer layer
+    // and VPC isolation. Associate this WebACL with a CloudFront distribution if a public
+    // edge layer is added in future.
 
     // ---- WAF logging to a dedicated CWL log group ----
     // The log group name MUST be prefixed `aws-waf-logs-` per AWS requirement.

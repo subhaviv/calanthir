@@ -206,7 +206,6 @@ export class WorkloadDeploymentStage extends Stage {
       availabilityZones: this.networkStack.vpc.vpc.availabilityZones,
       bedrockRuntimeVpceId:
         this.networkStack.vpc.endpoints.bedrockRuntime.vpcEndpointId,
-      vpceSecurityGroupId: this.networkStack.vpc.vpceEniSg.securityGroupId,
       envName: props.envName,
       tenantId: props.tenantId,
       agentId: props.agentId,

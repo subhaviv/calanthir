@@ -326,8 +326,9 @@ export class LiteLLMGatewayConstruct extends Construct {
       vpcSubnets: props.subnets ?? { subnetType: SubnetType.PRIVATE_ISOLATED },
       deletionProtection: true,
     });
-    this.alb.logAccessLogs(albAccessLogsBucket, 'litellm-alb/');
+    this.alb.logAccessLogs(albAccessLogsBucket, 'litellm-alb');
 
+    
     // ALB-level cdk-nag suppressions:
     // - Internal ALB behind API Gateway VPC Link; WAF is at API Gateway (not ALB).
     //   NIST.800.53.R5-ALBWAFEnabled is satisfied by API Gateway WAF upstream.

@@ -27,7 +27,6 @@ import {
   ApplicationTargetGroup,
   TargetType,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import { IpTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import {
   Effect,
   PolicyStatement,
@@ -163,7 +162,7 @@ export class AgentCoreGatewayConstruct extends Construct {
       securityGroup: this.albSg,
       deletionProtection: true,
     });
-    this.alb.logAccessLogs(albAccessLogsBucket, 'agentcore-gateway-alb/');
+    this.alb.logAccessLogs(albAccessLogsBucket, 'agentcore-gateway-alb');
     NagSuppressions.addResourceSuppressions(
       this.alb,
       [
@@ -185,9 +184,8 @@ export class AgentCoreGatewayConstruct extends Construct {
       port: 443,
       protocol: props.certificate ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP,
       targetType: TargetType.IP,
-      // Placeholder IP; overridden once AWS::BedrockAgentCore::Gateway L1 lands
-      // and exposes ENIs that can be registered as targets.
-      targets: [new IpTarget('10.20.0.1')],
+      // No targets registered yet: AWS::BedrockAgentCore::Gateway L1 is not yet
+      // available. Targets will be added once the Gateway exposes its ENI IPs.
       healthCheck: { path: '/ping', healthyHttpCodes: '200-299' },
     });
 

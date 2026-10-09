@@ -15,15 +15,14 @@
  * SPDX-License-Identifier: MIT-0
  */
 import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
-import { IVpc, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
-import { LiteLLMGatewayConstruct } from '@agenticai/litellm-gateway';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { AgentCoreGatewayConstruct, ApiGatewayFronting } from '@agenticai/agentcore-gateway';
 import { AgentCoreIdentityConstruct } from '@agenticai/agentcore-identity';
 import { AgenticApp } from '@agenticai/agentic-app';
-import { BedrockQuotaRequestConstruct } from '@agenticai/bedrock-quotas';
 import { RagKnowledgeBaseConstruct } from '@agenticai/rag';
 import {
   OamSourceLinkConstruct,
@@ -55,22 +54,22 @@ export interface WorkloadAppStackProps extends StackProps {
    * bucket access to in-VPC callers only.
    */
   readonly bedrockRuntimeVpceId: string;
-  /**
-   * The VPCE-ENI security group id from the network stack (`vpc.vpceEniSg`).
-   * Required so LiteLLM's egress rule targets a real SG rather than the
-   * historical `pl-0000000000000000` placeholder.
-   */
-  readonly vpceSecurityGroupId: string;
-
   readonly envName: string;
   readonly tenantId: string;
   readonly agentId: string;
   readonly costCentre: string;
 
   /**
-   * Optional desired per-account Bedrock RPM quota. Default 100 (non-prod).
+   * External Cognito User Pool to use for API Gateway JWT auth instead of
+   * creating a new pool. Pass the Pool ID of an existing pool (e.g. loom-user-pool
+   * in the platform account). The pool can be cross-account — API Gateway resolves
+   * the issuer URL from the public JWKS endpoint.
    */
-  readonly bedrockDesiredRpm?: number;
+  readonly externalUserPoolId?: string;
+  /** User Pool Client ID on the external pool to use as the JWT audience. */
+  readonly externalUserPoolClientId?: string;
+  /** AWS region of the external user pool. Defaults to stack region. */
+  readonly externalUserPoolRegion?: string;
 
   /** Audit-account OAM sink ARN (imported from AuditStack). */
   readonly auditOamSinkArn?: string;
@@ -84,7 +83,6 @@ export interface WorkloadAppStackProps extends StackProps {
 
 export class WorkloadAppStack extends Stack {
   readonly vpc: IVpc;
-  readonly litellm: LiteLLMGatewayConstruct;
   readonly identity: AgentCoreIdentityConstruct;
   readonly gateway: AgentCoreGatewayConstruct;
   readonly apiGatewayFront: ApiGatewayFronting;
@@ -103,31 +101,32 @@ export class WorkloadAppStack extends Stack {
       vpcCidrBlock: props.vpcCidr,
     });
 
-    // ---- LiteLLM (D-01) ----
-    const vpceSg = SecurityGroup.fromSecurityGroupId(this, 'ImportedVpceSg', props.vpceSecurityGroupId, {
-      mutable: true,
-    });
-    this.litellm = new LiteLLMGatewayConstruct(this, 'LiteLLM', {
-      vpc: this.vpc,
-      bedrockVpceSecurityGroup: vpceSg,
-    });
-
-    // ---- AgentCore Identity (Cognito + Token Vault CMK) ----
+    // ---- AgentCore Identity (Token Vault CMK; Cognito pool may be external) ----
     this.identity = new AgentCoreIdentityConstruct(this, 'Identity', {
       envName: props.envName,
     });
 
-    // ---- AgentCore Gateway (behind API Gateway per §08) ----
+    // ---- AgentCore Gateway (Tool Gateway per §08 / §2.3) ----
     this.gateway = new AgentCoreGatewayConstruct(this, 'AgentCoreGateway', {
       vpc: this.vpc,
       envName: props.envName,
     });
 
-    // ---- API Gateway fronting (the primary auth boundary) ----
+    // ---- API Gateway fronting (primary client auth boundary) ----
+    // Use the external loom-user-pool (cross-account) when supplied so the
+    // frontend app's existing Cognito tokens are accepted without re-auth.
+    // Fall back to the locally-created pool for standalone deployments.
+    const userPoolRegion = props.externalUserPoolRegion ?? this.region;
+    const frontingUserPool = props.externalUserPoolId
+      ? UserPool.fromUserPoolId(this, 'ExternalUserPool', props.externalUserPoolId)
+      : this.identity.userPool;
+    const frontingClientId = props.externalUserPoolClientId
+      ?? this.identity.userPoolClient.userPoolClientId;
     this.apiGatewayFront = new ApiGatewayFronting(this, 'ApiGwFront', {
       vpc: this.vpc,
-      userPool: this.identity.userPool,
-      userPoolClientId: this.identity.userPoolClient.userPoolClientId,
+      userPool: frontingUserPool,
+      userPoolRegion,
+      userPoolClientId: frontingClientId,
       targetAlbListenerArn: this.gateway.albListener.listenerArn,
       targetAlbSecurityGroup: this.gateway.albSg,
     });
@@ -147,19 +146,6 @@ export class WorkloadAppStack extends Stack {
       kbId: 'primary',
       envName: props.envName,
       approvedVpceId: props.bedrockRuntimeVpceId,
-    });
-
-    // ---- Bedrock quota-increase requests ----
-    new BedrockQuotaRequestConstruct(this, 'BedrockQuotas', {
-      envName: props.envName,
-      requests: [
-        {
-          // Bedrock Runtime RPM for Claude Sonnet 4.5 (indicative code).
-          quotaCode: 'L-AGENTICAI-CLAUDE-RPM',
-          desiredValue: props.bedrockDesiredRpm ?? 100,
-          description: `Requested Bedrock Claude RPM for ${props.envName}`,
-        },
-      ],
     });
 
     // ---- Phase 6 — Observability + cost ----
@@ -212,10 +198,6 @@ export class WorkloadAppStack extends Stack {
     new CfnOutput(this, 'ApiGatewayUrl', {
       value: `https://${this.apiGatewayFront.api.attrApiEndpoint}`,
       description: 'Primary auth boundary for agent traffic.',
-    });
-    new CfnOutput(this, 'LiteLLMAlbDns', {
-      value: this.litellm.alb.loadBalancerDnsName,
-      description: 'Internal LiteLLM ALB DNS (VPC-reachable only).',
     });
     new CfnOutput(this, 'UserPoolId', { value: this.identity.userPool.userPoolId });
     new CfnOutput(this, 'UserPoolClientId', { value: this.identity.userPoolClient.userPoolClientId });

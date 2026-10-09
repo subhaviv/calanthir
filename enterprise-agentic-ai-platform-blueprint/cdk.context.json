@@ -11,9 +11,12 @@
   "agenticai/costCentre": "platform",
   "agenticai/organizationId": "o-0000calplch",
   "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/Admin",
+  "agenticai/externalUserPoolId": "us-east-1_NoErXe1QA",
+  "agenticai/externalUserPoolClientId": "3o0q6hdtfo1sphqq7jtqaspb3f",
+  "agenticai/externalUserPoolRegion": "us-east-1",
   "agenticai/inferenceModelRateLimits": [
     {
-      "qualifiedModelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+      "qualifiedModelId": "anthropic.claude-sonnet-4-5-20250929-v1:0",
       "requestsPerMinute": 60,
       "tokensPerMinute": 400000
     }
