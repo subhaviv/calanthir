@@ -1,0 +1,132 @@
+PRESCRIPTION DRUG FORMULARY — PPO PLAN 2026
+Effective: January 1, 2026
+
+This formulary lists the prescription drugs covered under your PPO plan and
+their assigned cost-share tier. The formulary is subject to change during the
+plan year. Updated formularies are posted on the member portal.
+
+===========================================================================
+PHARMACY BENEFIT OVERVIEW
+===========================================================================
+
+PHARMACY DEDUCTIBLE: $200 individual / $400 family (separate from medical deductible)
+PHARMACY OUT-OF-POCKET MAXIMUM: Counts toward the combined medical out-of-pocket maximum.
+
+RETAIL PHARMACY (30-day supply):
+  Tier 1 — Preferred Generic:         $10 copay
+  Tier 2 — Non-Preferred Generic:     $25 copay
+  Tier 3 — Preferred Brand:           $60 copay (after pharmacy deductible)
+  Tier 4 — Non-Preferred Brand:       $90 copay (after pharmacy deductible)
+  Tier 5 — Specialty:                 25% coinsurance, max $250/fill (after pharmacy deductible)
+
+MAIL-ORDER PHARMACY (90-day supply, up to 2.5x the 30-day cost-share):
+  Tier 1 — Preferred Generic:         $25 copay
+  Tier 2 — Non-Preferred Generic:     $62.50 copay
+  Tier 3 — Preferred Brand:           $150 copay (after pharmacy deductible)
+  Tier 4 — Non-Preferred Brand:       $225 copay (after pharmacy deductible)
+  Tier 5 — Specialty:                 25% coinsurance, max $625/fill (not available by mail)
+
+SPECIALTY DRUGS: Available only at designated specialty pharmacies. A 30-day supply limit
+applies. Prior authorization is required for all Tier 5 specialty drugs.
+
+===========================================================================
+TIER EXAMPLES (REPRESENTATIVE — NOT EXHAUSTIVE)
+===========================================================================
+
+TIER 1 — PREFERRED GENERICS ($10 retail / $25 mail)
+  - Lisinopril (ACE inhibitor, hypertension)
+  - Metformin (diabetes, type 2)
+  - Atorvastatin (statin, cholesterol)
+  - Amlodipine (calcium channel blocker, hypertension)
+  - Levothyroxine (thyroid hormone replacement)
+  - Omeprazole (proton pump inhibitor, GERD)
+  - Sertraline (SSRI, depression/anxiety)
+  - Metoprolol succinate (beta-blocker, hypertension/heart failure)
+  - Albuterol inhaler (bronchodilator, asthma/COPD)
+  - Hydrochlorothiazide (diuretic, hypertension)
+
+TIER 2 — NON-PREFERRED GENERICS ($25 retail / $62.50 mail)
+  - Escitalopram (SSRI — preferred alternative: sertraline Tier 1)
+  - Pantoprazole (PPI — preferred alternative: omeprazole Tier 1)
+  - Losartan (ARB, hypertension)
+  - Gabapentin (anticonvulsant/neuropathic pain)
+  - Cyclobenzaprine (muscle relaxant)
+  - Trazodone (antidepressant/insomnia)
+
+TIER 3 — PREFERRED BRANDS ($60 retail / $150 mail, after Rx deductible)
+  - Jardiance (empagliflozin — diabetes/heart failure)
+  - Eliquis (apixaban — anticoagulant)
+  - Xarelto (rivaroxaban — anticoagulant)
+  - Trulicity (dulaglutide — GLP-1, diabetes)
+  - Advair Diskus (fluticasone/salmeterol — asthma/COPD)
+  - Symbicort (budesonide/formoterol — asthma/COPD)
+  - Lyrica (pregabalin — neuropathic pain/fibromyalgia)
+
+TIER 4 — NON-PREFERRED BRANDS ($90 retail / $225 mail, after Rx deductible)
+  - Ozempic (semaglutide — diabetes; preferred GLP-1: Trulicity Tier 3)
+  - Wegovy (semaglutide — obesity; see weight management policy)
+  - Nexium (esomeprazole — preferred PPI: omeprazole Tier 1)
+  - Bystolic (nebivolol — preferred beta-blocker: metoprolol Tier 1)
+
+TIER 5 — SPECIALTY (25% coinsurance up to $250/fill, prior auth required)
+  - Humira (adalimumab — RA, IBD, psoriasis)
+  - Keytruda (pembrolizumab — oncology)
+  - Dupixent (dupilumab — atopic dermatitis, asthma)
+  - Skyrizi (risankizumab — psoriasis, psoriatic arthritis)
+  - Stelara (ustekinumab — psoriasis, Crohn's disease)
+  - Ocrevus (ocrelizumab — multiple sclerosis)
+  - Tysabri (natalizumab — multiple sclerosis)
+
+===========================================================================
+STEP THERAPY REQUIREMENTS
+===========================================================================
+Some drugs require step therapy — you must try a preferred drug first before
+the plan will cover the non-preferred alternative at the lower tier rate.
+
+Common step therapy requirements:
+  - Proton pump inhibitors: Try omeprazole (Tier 1) before pantoprazole (Tier 2) or Nexium (Tier 4)
+  - SSRI antidepressants: Try sertraline (Tier 1) before escitalopram (Tier 2)
+  - GLP-1 agonists: Try Trulicity (Tier 3) before Ozempic (Tier 4) for diabetes indication
+  - TNF-alpha inhibitors: Try one biosimilar before branded Humira for applicable conditions
+
+Step therapy overrides require a physician exception request submitted to the pharmacy
+benefit manager. Processing time: 3–5 business days.
+
+===========================================================================
+QUANTITY LIMITS
+===========================================================================
+Quantity limits apply to certain medications to ensure safe and appropriate use.
+Examples:
+  - Opioid analgesics: 7-day supply for new prescriptions (acute pain)
+  - Sumatriptan (migraine): 9 tablets per 30 days
+  - Erectile dysfunction drugs: 6 tablets per 30 days
+  - Hypnotic sleep aids: 30 tablets per 30 days
+
+===========================================================================
+EXCLUDED DRUGS
+===========================================================================
+The following categories are not covered under the pharmacy benefit:
+  - Cosmetic drugs (minoxidil for cosmetic hair loss, tretinoin for cosmetic use)
+  - Weight loss drugs (except when prescribed for diabetes per formulary exception)
+  - Fertility drugs
+  - Drugs available over-the-counter without a prescription (unless specifically listed)
+  - Compounded drugs not approved by the FDA
+  - Experimental or investigational drugs
+
+===========================================================================
+PRIOR AUTHORIZATION — PHARMACY
+===========================================================================
+Prior authorization (PA) is required for:
+  - All Tier 5 specialty drugs
+  - Select Tier 4 non-preferred brands
+  - GLP-1 drugs for weight loss indication
+  - Opioids exceeding quantity limits
+  - Any drug requiring step therapy where prior therapy has not been documented
+
+PA requests are submitted by the prescribing provider, not the member.
+PA approval is valid for 12 months unless otherwise specified.
+
+For questions about pharmacy benefits, cost-share, or formulary placement,
+contact the Pharmacy Benefit helpline listed on the member ID card.
+Member service representatives should not make PA decisions — route to the
+clinical prior authorization team.

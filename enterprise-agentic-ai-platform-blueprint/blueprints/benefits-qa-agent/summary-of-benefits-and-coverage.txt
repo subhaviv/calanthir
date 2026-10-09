@@ -1,0 +1,190 @@
+SUMMARY OF BENEFITS AND COVERAGE (SBC)
+PPO Plan — Plan Year 2026
+Coverage Period: 01/01/2026 – 12/31/2026
+
+This is a Preferred Provider Organization (PPO) plan. You do NOT need a referral to see a specialist.
+
+===========================================================================
+DEDUCTIBLES
+===========================================================================
+Individual Deductible (In-Network):       $1,500 per plan year
+Family Deductible (In-Network):           $3,000 per plan year
+Individual Deductible (Out-of-Network):   $3,000 per plan year
+Family Deductible (Out-of-Network):       $6,000 per plan year
+
+The family deductible is met once covered members collectively reach $3,000 in-network,
+even if no individual member has met their individual deductible.
+
+===========================================================================
+OUT-OF-POCKET MAXIMUMS
+===========================================================================
+Individual Out-of-Pocket Maximum (In-Network):     $4,500 per plan year
+Family Out-of-Pocket Maximum (In-Network):         $9,000 per plan year
+Individual Out-of-Pocket Maximum (Out-of-Network): $9,000 per plan year
+Family Out-of-Pocket Maximum (Out-of-Network):     $18,000 per plan year
+
+Once the out-of-pocket maximum is met, the plan pays 100% of covered in-network services
+for the remainder of the plan year. Premiums do not count toward the out-of-pocket maximum.
+
+===========================================================================
+MEDICAL COST-SHARE (AFTER DEDUCTIBLE UNLESS NOTED)
+===========================================================================
+
+PRIMARY CARE VISIT (In-Network):        $30 copay per visit
+PRIMARY CARE VISIT (Out-of-Network):    40% coinsurance
+
+SPECIALIST VISIT (In-Network):          $60 copay per visit
+SPECIALIST VISIT (Out-of-Network):      40% coinsurance
+
+URGENT CARE CENTER (In-Network):        $75 copay per visit
+URGENT CARE CENTER (Out-of-Network):    40% coinsurance
+
+EMERGENCY ROOM:                         $350 copay per visit (waived if admitted)
+  Note: ER copay applies regardless of in-network or out-of-network status for
+  true medical emergencies. The copay is waived if the member is admitted as inpatient.
+
+INPATIENT HOSPITAL (In-Network):        20% coinsurance per admission (after deductible)
+INPATIENT HOSPITAL (Out-of-Network):    40% coinsurance per admission
+
+OUTPATIENT SURGERY (In-Network):        20% coinsurance (after deductible)
+OUTPATIENT SURGERY (Out-of-Network):    40% coinsurance
+
+OUTPATIENT LAB / PATHOLOGY (In-Network):   $20 copay per service
+OUTPATIENT IMAGING / X-RAY (In-Network):   $50 copay per service
+ADVANCED IMAGING / MRI / CT (In-Network):  20% coinsurance (after deductible)
+ADVANCED IMAGING (Out-of-Network):         40% coinsurance
+
+===========================================================================
+PREVENTIVE CARE
+===========================================================================
+ACA-mandated preventive services (annual wellness exam, recommended screenings,
+immunizations, contraceptive services) are covered at $0 cost-share in-network,
+with no deductible requirement, when billed as preventive.
+
+If a preventive visit results in the diagnosis or treatment of a medical condition,
+additional charges may apply at the standard cost-share.
+
+===========================================================================
+MENTAL HEALTH AND SUBSTANCE USE DISORDER (MHSUD)
+===========================================================================
+Outpatient Mental Health Visit (In-Network):        $30 copay per visit
+Outpatient Mental Health Visit (Out-of-Network):    40% coinsurance
+Inpatient Mental Health (In-Network):               20% coinsurance (after deductible)
+Inpatient Substance Use Treatment (In-Network):     20% coinsurance (after deductible)
+
+Mental health benefits are provided at parity with medical/surgical benefits
+under the Mental Health Parity and Addiction Equity Act (MHPAEA).
+
+===========================================================================
+REFERRALS
+===========================================================================
+This is a PPO plan. Referrals to specialists are NOT required.
+Members may self-refer to any in-network specialist without prior authorization,
+except for services that require prior authorization (see below).
+
+===========================================================================
+PRIOR AUTHORIZATION REQUIREMENTS
+===========================================================================
+The following services require prior authorization from the plan before services
+are rendered. Failure to obtain prior authorization may result in denial.
+
+- Inpatient hospital admissions (non-emergency)
+- Inpatient mental health and substance use disorder treatment
+- Outpatient surgical procedures in select categories
+- Advanced imaging (MRI, CT scan, PET scan) — select diagnoses
+- Durable Medical Equipment (DME) over $500
+- Home health care (more than 20 visits per plan year)
+- Skilled nursing facility (SNF) stays
+- Transplant services
+- Specialty biologic drugs (Tier 4 and above)
+- Out-of-network care when an in-network alternative is available (non-emergency)
+
+Prior authorization decisions are made within:
+  - Urgent/concurrent requests: 72 hours
+  - Standard requests: 3 business days
+  - Retrospective review: 30 calendar days
+
+To request prior authorization, contact the plan's utilization management department
+or submit via the provider portal. Members may not submit prior auth requests directly.
+
+===========================================================================
+NETWORK TIERS
+===========================================================================
+PREFERRED IN-NETWORK (Tier 1):  Contracted preferred providers. Lowest cost-share.
+STANDARD IN-NETWORK (Tier 2):   Contracted standard providers. Standard cost-share as shown above.
+OUT-OF-NETWORK:                  Non-contracted providers. Highest cost-share; member
+                                  responsible for balance billing above allowed amount.
+
+To verify network status for a specific provider, use the online provider directory
+or call the member services number on the back of the ID card.
+
+===========================================================================
+COORDINATION OF BENEFITS (COB)
+===========================================================================
+When a member has coverage under more than one health plan, this plan follows
+the standard COB rules:
+
+- The primary plan pays first up to its benefit limits.
+- The secondary plan may pay some or all of the remaining balance.
+- The member's total reimbursement across both plans cannot exceed 100% of
+  the allowed charge.
+- If this plan is secondary, benefits are calculated based on what this plan
+  would have paid had it been primary, minus what the primary plan paid.
+
+Birthday Rule: For dependent children covered under two plans, the plan of the
+parent whose birthday falls earlier in the calendar year is primary.
+
+===========================================================================
+EXCLUDED SERVICES (NOT COVERED)
+===========================================================================
+The following services are not covered under this plan:
+
+- Cosmetic surgery (unless medically necessary due to injury or disease)
+- Routine dental care (cleanings, fillings, extractions)
+- Routine vision care (exams for glasses or contact lenses)
+- Hearing aids and routine hearing exams
+- Custodial care and long-term care
+- Weight loss surgery (unless meeting medical necessity criteria — requires prior auth)
+- Fertility treatments beyond diagnosis (IVF, surrogacy, donor services)
+- Experimental or investigational treatments (as determined by the plan)
+- Services not medically necessary as defined in the plan documents
+- Services received outside the United States (except emergency care)
+- Workers' compensation-covered services
+
+For a complete list of exclusions, refer to the Evidence of Coverage document.
+
+===========================================================================
+CLAIMS SUBMISSION
+===========================================================================
+In-network providers submit claims directly to the plan on the member's behalf.
+
+Out-of-network claims may be submitted by the member:
+  - Filing deadline: 365 days from date of service
+  - Submit to: Claims Department, P.O. Box indicated on the back of ID card
+  - Required: itemized bill (CPT codes, diagnosis codes, provider NPI, date of service)
+  - Reimbursement timeline: within 30 calendar days of receipt of a clean claim
+
+EXPLANATION OF BENEFITS (EOB): Members receive an EOB after each claim is processed.
+The EOB is not a bill. It shows: amount billed, allowed amount, plan payment, and
+amount the member may owe.
+
+===========================================================================
+APPEALS AND GRIEVANCES
+===========================================================================
+Members have the right to appeal coverage decisions.
+
+FIRST-LEVEL APPEAL: Submit within 180 days of the adverse benefit determination.
+  Decision timeline: 60 days (standard), 72 hours (expedited/urgent).
+
+SECOND-LEVEL APPEAL: If the first-level appeal is denied, submit a second-level appeal.
+  Decision timeline: 60 days.
+
+EXTERNAL REVIEW: After exhausting internal appeals, members may request an independent
+external review through the state insurance department.
+
+GRIEVANCES: Non-coverage complaints (e.g., access to care, provider behavior) may be
+filed at any time. Resolution timeline: 30 calendar days.
+
+All appeals and grievances must be handled by the plan's Appeals & Grievances department.
+Member service representatives should not make coverage determinations — escalate to the
+appropriate clinical or appeals team.

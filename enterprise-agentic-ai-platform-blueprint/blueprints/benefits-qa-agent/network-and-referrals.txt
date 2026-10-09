@@ -1,0 +1,117 @@
+NETWORK GUIDANCE AND REFERRAL POLICY — PPO PLAN 2026
+
+===========================================================================
+PPO NETWORK — OVERVIEW
+===========================================================================
+
+This plan uses a Preferred Provider Organization (PPO) network. Key features:
+
+1. NO REFERRAL REQUIRED: Members can see any specialist, including out-of-network
+   providers, without a referral from a primary care physician. This is a defining
+   characteristic of a PPO plan and distinguishes it from an HMO or EPO.
+
+2. IN-NETWORK SAVINGS: Members receive the highest level of benefits when using
+   in-network (contracted) providers. In-network providers have agreed to accept
+   the plan's allowed amount, which means lower out-of-pocket costs and no balance
+   billing risk.
+
+3. OUT-OF-NETWORK COVERAGE: Members may use out-of-network providers, but at
+   higher cost-share. Out-of-network providers may also balance-bill — charge
+   above the plan's allowed amount — and the member is responsible for the difference.
+
+4. NO PRIMARY CARE PHYSICIAN (PCP) REQUIREMENT: Members are not required to select
+   or register a primary care physician. However, having a regular PCP is
+   encouraged for continuity of care.
+
+===========================================================================
+NETWORK TIERS
+===========================================================================
+
+TIER 1 — PREFERRED IN-NETWORK (lowest cost-share)
+  Providers in the preferred tier have negotiated enhanced rates. Members pay
+  the standard in-network cost-share shown in the SBC ($30 PCP / $60 specialist).
+
+TIER 2 — STANDARD IN-NETWORK
+  Contracted providers not in the preferred tier. Cost-share is the same as
+  Tier 1 under this plan's benefit design (single in-network tier).
+
+OUT-OF-NETWORK
+  Non-contracted providers. Members pay higher coinsurance (40%) and may face
+  balance billing. The plan's allowed amount is based on the Usual, Customary,
+  and Reasonable (UCR) rate for that service in the geographic area.
+
+===========================================================================
+HOW TO VERIFY NETWORK STATUS
+===========================================================================
+
+Members and MSRs can verify provider network status using:
+  - Online provider directory: available on the member portal (search by name, NPI, specialty, location)
+  - Provider services phone line: call the number on the back of the member ID card
+  - Real-time eligibility check (for MSRs): available in the member services system
+
+IMPORTANT: Network status can change. Always verify at time of service. Listing
+in the directory does not guarantee that the provider is currently accepting
+new patients.
+
+To confirm network status for a specific provider:
+  1. Search by NPI (National Provider Identifier) for the most accurate match
+  2. Confirm the service address matches (a provider may be in-network at one
+     location but not another)
+  3. Confirm the tax ID / group NPI for group practices
+
+===========================================================================
+SPECIALIST ACCESS — NO REFERRAL REQUIRED
+===========================================================================
+Under this PPO plan, members may self-refer to any specialty, including:
+  - Dermatology
+  - Orthopedics and sports medicine
+  - Cardiology
+  - OB/GYN (including for annual well-woman exams)
+  - Mental health and behavioral health specialists
+  - Physical therapy and occupational therapy (up to 30 visits per plan year in-network)
+  - Chiropractic care (up to 20 visits per plan year in-network)
+  - Ophthalmology (medical eye care, not routine vision — routine vision is not covered)
+
+EXCEPTIONS — SERVICES THAT REQUIRE PRIOR AUTHORIZATION even without a referral:
+  See the SBC prior authorization list. Prior authorization is required for
+  inpatient admissions, advanced imaging, select surgical procedures, and
+  specialty biologic drugs regardless of whether the provider is in-network.
+  Prior auth protects members from unexpected non-covered charges. Members
+  should confirm PA status before elective procedures.
+
+===========================================================================
+EMERGENCY AND URGENT CARE
+===========================================================================
+EMERGENCY CARE:
+  Emergency services are covered at the in-network benefit level at any facility,
+  in-network or out-of-network, when a reasonable person would believe a medical
+  emergency exists. The $350 ER copay applies.
+
+  After stabilization, if the member is admitted to an out-of-network hospital,
+  the in-network benefit level continues for the duration of the admission for
+  the emergency condition under No Surprises Act protections.
+
+URGENT CARE:
+  Use an in-network urgent care center for non-emergency conditions requiring
+  prompt attention (infections, minor injuries, flu symptoms). Cost: $75 copay.
+  Going to the ER for non-emergency conditions will still apply the $350 ER copay.
+
+TELEHEALTH:
+  Telehealth visits with in-network providers are covered at the primary care
+  or specialist copay depending on the provider type. Use the plan's telehealth
+  partner (listed on the member ID card) for the lowest cost-share.
+
+===========================================================================
+BALANCE BILLING PROTECTIONS
+===========================================================================
+For in-network providers: Members cannot be balance-billed. Providers must
+accept the contracted allowed amount as payment in full.
+
+For emergency services at any facility: Protections under the No Surprises Act
+prevent balance billing for emergency services, air ambulance from non-network
+providers, and services from non-network providers at in-network facilities
+(unless the member provided informed consent in non-emergency situations).
+
+If a member receives an unexpected bill from an in-network provider or for
+emergency services, advise them to contact member services for assistance.
+Do not advise members to pay disputed balance bills before the dispute is resolved.

@@ -1,0 +1,125 @@
+EXPLANATION OF BENEFITS (EOB) — GLOSSARY AND GUIDE
+PPO Plan 2026
+
+This document helps member service representatives explain EOB terminology to members.
+
+===========================================================================
+WHAT IS AN EOB?
+===========================================================================
+An Explanation of Benefits (EOB) is a statement sent by the health plan after
+a claim is processed. It is NOT a bill. It shows how a claim was adjudicated —
+what was billed, what was allowed, what the plan paid, and what the member may owe.
+
+Members typically receive an EOB within 30 days of a claim being processed.
+EOBs are available on the member portal and mailed for claims over $50.
+
+===========================================================================
+EOB FIELD DEFINITIONS
+===========================================================================
+
+AMOUNT BILLED (or "Billed Charges"):
+  The full amount the provider charged for the service. This is the starting
+  point for adjudication but is rarely what anyone actually pays.
+
+NEGOTIATED DISCOUNT (or "Plan Discount" / "Contractual Adjustment"):
+  The reduction applied when a provider is in-network. In-network providers
+  have agreed to accept the plan's allowed amount as payment in full.
+  Members are NOT responsible for this amount.
+
+ALLOWED AMOUNT (or "Eligible Expense" / "Recognized Charge"):
+  The maximum amount the plan will consider for reimbursement for a given service.
+  For in-network providers: set by the contracted fee schedule.
+  For out-of-network providers: typically based on the Usual, Customary, and
+  Reasonable (UCR) rate. The member may be billed the difference between
+  the provider's charge and the allowed amount (balance billing).
+
+APPLIED TO DEDUCTIBLE:
+  The portion of the allowed amount credited toward the member's deductible.
+  Once the deductible is met, this column will show $0.00 for remaining claims.
+
+APPLIED TO OUT-OF-POCKET:
+  The total amount counting toward the member's annual out-of-pocket maximum
+  (deductible + copays + coinsurance combined).
+
+COPAY:
+  A fixed dollar amount the member pays per service (e.g., $30 for a primary
+  care visit). Copays typically apply at the time of service and count toward
+  the out-of-pocket maximum.
+
+COINSURANCE:
+  The percentage of the allowed amount the member pays after the deductible
+  has been met. For example, 20% coinsurance on a $1,000 allowed amount = $200.
+
+PLAN PAID:
+  The amount the health plan paid directly to the provider (or to the member
+  for reimbursement claims). This is after applying any deductible, copay,
+  and coinsurance.
+
+MEMBER RESPONSIBILITY (or "Your Share" / "Amount You May Owe"):
+  The total amount the member owes — the sum of any deductible applied,
+  copay, and/or coinsurance. This is what the provider may bill the member.
+  For in-network providers, members cannot be billed above this amount.
+
+NOT COVERED / DENIED:
+  Some line items may show as not covered. Common reasons:
+  - Service excluded from the benefit plan
+  - Prior authorization not obtained
+  - Service not medically necessary per plan criteria
+  - Provider is out-of-network and the service required in-network
+  - Claim submitted after the filing deadline
+  - Duplicate claim submission
+
+REMARK CODES / REASON CODES:
+  Alphanumeric codes explaining how each line item was processed. Common codes:
+  - CO-45: Charge exceeds fee schedule/maximum allowable (contractual write-off)
+  - PR-1:  Deductible amount (member responsibility)
+  - PR-2:  Coinsurance amount (member responsibility)
+  - PR-3:  Co-payment amount (member responsibility)
+  - OA-23: Service not covered by plan
+  - CO-97: Payment included in allowance for another service
+
+===========================================================================
+COMMON MEMBER QUESTIONS ABOUT EOBS
+===========================================================================
+
+Q: "My EOB shows I owe $400, but I already paid my copay at the office."
+A: The copay is usually applied first. The remaining $400 may be coinsurance
+   or deductible being applied to the same visit. Compare the "Member Responsibility"
+   to what was paid at the time of service. If the provider is billing more than
+   the EOB shows, that may be a billing error — advise the member to contact
+   the provider's billing department.
+
+Q: "Why does my EOB show a 'not covered' amount?"
+A: This typically means the service was excluded under the plan, or a required
+   prior authorization was not obtained. Pull up the specific reason code on
+   the EOB for the correct explanation. Do not make coverage determinations —
+   if the member disputes the denial, direct them to the appeals process.
+
+Q: "I haven't met my deductible. Why did the plan pay anything?"
+A: Some services — like preventive care and copay-based visits — are paid
+   regardless of deductible status. Copay-based services (like a $30 PCP visit)
+   are not subject to the deductible.
+
+Q: "Why is the 'amount billed' higher than what I have to pay?"
+A: In-network providers agree to accept the plan's allowed amount. The
+   difference between their billed charge and the allowed amount is a
+   contractual write-off — neither the member nor the plan pays it.
+
+Q: "I went to an in-network provider but got a bill from an out-of-network anesthesiologist."
+A: Surprise billing protections (No Surprises Act) apply in most cases for
+   emergency care and for scheduled procedures at in-network facilities where
+   the member could not reasonably select the provider. For disputes, the
+   member should contact member services and may be eligible for the
+   independent dispute resolution process.
+
+===========================================================================
+WHEN TO ESCALATE
+===========================================================================
+Member service representatives should escalate to Claims or Appeals when:
+  - Member is disputing a denial (route to first-level appeals)
+  - Member believes a claim was processed incorrectly (route to Claims Review)
+  - Member received balance billing from an in-network provider
+  - Member is requesting a re-adjudication of a claim
+  - The issue involves a coordination of benefits dispute with another insurer
+
+Do not reprocess claims or make coverage determinations from the member services line.

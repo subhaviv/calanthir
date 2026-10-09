@@ -1,0 +1,35 @@
+virtualModels:
+  - name: benefits-qa-primary
+    source: application-inference-profile
+
+guardrails:
+  required: true
+  default_profile: internal-tools  # MSR tool — stricter PII filter than customer-facing
+
+streaming:
+  default: true
+
+hitl:
+  enabled: true
+  # SQS queue created by the workload CDK stack — name follows the standard convention.
+  queue: sqs://agenticai-${env}-${tenant}-${agent}-escalations
+  triggers:
+    - coverage_dispute
+    - prior_auth
+    - appeal
+    - grievance
+    - medical_necessity
+    - session_length_cap
+
+knowledgeBase:
+  required: true
+  # kb_id is injected at runtime from the RagKnowledgeBaseConstruct stack output.
+  # Load the PPO benefits documents (SBCs, formularies, EOC) into the KB before
+  # enabling this agent in a workload account.
+  corpus: ppo-benefits-documents
+  top_k: 5
+
+memory:
+  # AgentCore Memory for cross-session MSR context (call notes, prior lookups).
+  enabled: false  # Enable once Memory construct is wired in the workload stack.
+  namespace: benefits-qa
