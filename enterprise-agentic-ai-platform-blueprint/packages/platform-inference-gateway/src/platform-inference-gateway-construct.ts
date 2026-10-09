@@ -457,6 +457,11 @@ export class PlatformInferenceGatewayConstruct extends Construct {
       this.userPool,
       [
         {
+          id: 'AwsSolutions-COG1',
+          reason:
+            'SEC-028: this pool has no human sign-in path; it issues only OAuth 2.0 client-credentials tokens, so a human-facing password policy is inapplicable.',
+        },
+        {
           id: 'AwsSolutions-COG2',
           reason:
             'SEC-028: this pool has no human sign-in path; it exists only for OAuth 2.0 client-credentials grants, so user MFA is inapplicable.',
@@ -465,6 +470,11 @@ export class PlatformInferenceGatewayConstruct extends Construct {
           id: 'AwsSolutions-COG3',
           reason:
             'SEC-028: Cognito threat-protection modes evaluate user authentication, while this pool permits only machine client-credentials grants.',
+        },
+        {
+          id: 'AwsSolutions-COG8',
+          reason:
+            'SEC-028: plus tier advanced security features apply to human sign-in flows; this pool issues only machine client-credentials tokens.',
         },
       ],
       true,
@@ -534,12 +544,28 @@ export class PlatformInferenceGatewayConstruct extends Construct {
     });
     this.gatewayRole.attachInlinePolicy(interceptorInvokePolicy);
     NagSuppressions.addResourceSuppressions(
+      interceptorInvokePolicy,
+      [
+        {
+          id: 'NIST.800.53.R5-IAMNoInlinePolicy',
+          reason:
+            'SEC-027: the interceptor invoke policy is lifecycle-bound to the Gateway role and scoped to the exact interceptor function ARN; extracting it to a managed policy would decouple its lifecycle from the role.',
+        },
+      ],
+      true,
+    );
+    NagSuppressions.addResourceSuppressions(
       this.guardrailInterceptorRole,
       [
         {
           id: 'AwsSolutions-IAM4',
           reason:
             'SEC-005: AWSLambdaBasicExecutionRole is the standard log-write policy for the interceptor Lambda; its only other grant is bedrock:ApplyGuardrail on the exact platform guardrail ARN.',
+        },
+        {
+          id: 'NIST.800.53.R5-IAMNoInlinePolicy',
+          reason:
+            'SEC-027: the ApplyGuardrail inline policy is lifecycle-bound to the interceptor role and scoped to a single guardrail ARN; extracting it to a managed policy would decouple its lifecycle from the role and create a reuse surface that does not exist.',
         },
       ],
       true,
@@ -551,6 +577,21 @@ export class PlatformInferenceGatewayConstruct extends Construct {
           id: 'AwsSolutions-L1',
           reason:
             'SEC-031: pinned to the Python 3.13 runtime shipped with this release; bumped deliberately with the offline handler tests.',
+        },
+        {
+          id: 'NIST.800.53.R5-LambdaConcurrency',
+          reason:
+            'SEC-032: the Gateway interceptor is invoked directly by the AgentCore Gateway service; concurrency scaling is governed by Gateway rate limits and account-level Lambda quotas, not a function-level reservation.',
+        },
+        {
+          id: 'NIST.800.53.R5-LambdaDLQ',
+          reason:
+            'SEC-032: the interceptor is a synchronous Gateway REQUEST handler; async retry/DLQ semantics do not apply — a failure returns an HTTP error to the caller and the Gateway fails closed.',
+        },
+        {
+          id: 'NIST.800.53.R5-LambdaInsideVPC',
+          reason:
+            'SEC-032: the interceptor only calls bedrock:ApplyGuardrail via the AWS SDK over the public Bedrock endpoint; placing it in the workload VPC would require a Bedrock VPCE and adds latency with no security benefit for this call pattern.',
         },
       ],
       true,
