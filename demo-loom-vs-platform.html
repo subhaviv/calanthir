@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Setup — Loom vs Platform</title>
+<style>
+  /* Cloudscape-inspired design tokens (AWS console look) */
+  :root {
+    --awsblue: #0972d3;
+    --awsblue-dark: #033160;
+    --navy: #232f3e;
+    --ink: #16191f;
+    --text: #0f1b2d;
+    --text-secondary: #5f6b7a;
+    --bg: #f2f3f3;        /* console grey canvas */
+    --surface: #ffffff;
+    --border: #c6c6cd;
+    --border-light: #e9ebed;
+    --green: #037f0c;
+    --green-bg: #f2fcf3;
+    --amber: #8d6605;
+    --amber-bg: #fffbf0;
+    --red: #d91515;
+    --purple: #6b2fb3;
+    --font: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+  /* top nav bar like the console */
+  .topnav { background: var(--navy); color:#fff; height:40px; display:flex; align-items:center; padding:0 20px; font-size:14px; }
+  .topnav .logo { font-weight:700; letter-spacing:0.2px; }
+  .topnav .logo span { color:#ff9900; }
+  .topnav .crumb { margin-left:18px; color:#d5dbdb; font-size:13px; }
+
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 20px 40px; }
+
+  /* page header */
+  .page-head { margin-bottom:6px; }
+  .page-head h1 { font-size:24px; font-weight:700; margin:0 0 4px; color: var(--ink); }
+  .page-head .desc { font-size:14px; color: var(--text-secondary); margin:0 0 20px; max-width:860px; }
+
+  /* container card (Cloudscape Container) */
+  .container { background: var(--surface); border:1px solid var(--border-light); border-radius:16px; box-shadow: 0 1px 1px rgba(0,28,36,.1); overflow:hidden; }
+  .container + .container { margin-top:16px; }
+  .ctr-head { padding:14px 20px; border-bottom:1px solid var(--border-light); display:flex; align-items:baseline; gap:10px; }
+  .ctr-head h2 { font-size:18px; font-weight:700; margin:0; color: var(--ink); }
+  .ctr-head .ctr-sub { font-size:12.5px; color: var(--text-secondary); }
+  .ctr-body { padding:18px 20px; }
+
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+  /* colored header strip per column */
+  .colhead { padding:12px 16px; border-bottom:1px solid var(--border-light); border-radius:16px 16px 0 0; }
+  .colhead h3 { margin:0; font-size:16px; font-weight:700; }
+  .colhead .tag { font-size:11.5px; font-weight:600; display:block; margin-top:2px; opacity:.9; }
+  .loom .colhead { background:#f0f7ff; }
+  .loom .colhead h3 { color: var(--awsblue); }
+  .loom .colhead .tag { color: var(--awsblue-dark); }
+  .plat .colhead { background: var(--amber-bg); }
+  .plat .colhead h3 { color: var(--amber); }
+  .plat .colhead .tag { color:#6b4e04; }
+
+  .colbody { padding:14px 16px; }
+  .row { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--border-light); font-size:13px; }
+  .row:last-child { border-bottom:none; }
+  .ic { flex:0 0 auto; width:18px; text-align:center; font-size:14px; }
+  .k { font-weight:600; color: var(--text); }
+  .d { color: var(--text-secondary); }
+
+  /* badge (Cloudscape Badge) */
+  .badge { display:inline-block; font-size:11px; font-weight:600; padding:1px 8px; border-radius:4px; }
+  .badge.green { background: var(--green-bg); color: var(--green); border:1px solid #b7eb8f; }
+  .badge.blue { background:#f0f7ff; color: var(--awsblue); border:1px solid #a5cdf5; }
+
+  /* alert (Cloudscape Alert) */
+  .alert { display:flex; gap:12px; padding:14px 16px; border-radius:12px; border:1px solid; font-size:13px; margin-top:16px; }
+  .alert.info { background:#f0f7ff; border-color:#a5cdf5; color: var(--awsblue-dark); }
+  .alert .ai { flex:0 0 auto; color: var(--awsblue); font-weight:700; }
+  .alert.warn { background: var(--amber-bg); border-color:#f0d58a; color:#6b4e04; }
+  .alert.warn .ai { color: var(--amber); }
+
+  /* bridge flow */
+  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; font-size:12.5px; }
+  .chip { background:#fff; border:1px solid var(--border); color: var(--text); padding:6px 11px; border-radius:6px; }
+  .chip.r { border-color:#f0d58a; background: var(--amber-bg); color:#6b4e04; font-weight:600; }
+  .arr { color: var(--text-secondary); font-weight:700; }
+
+  .line { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .line .box { background:#fafbfc; border:1px solid var(--border-light); border-radius:10px; padding:12px 14px; font-size:13px; }
+  .line .box .k { display:block; margin-bottom:3px; }
+  .footer-note { margin-top:18px; font-size:12px; color: var(--text-secondary); text-align:center; }
+</style>
+</head>
+<body>
+  <div class="topnav">
+    <span class="logo">aws<span>&nbsp;</span></span>
+    <span class="crumb">Agent Factory &rsaquo; Demo architecture</span>
+  </div>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Demo Setup &mdash; Loom vs the Platform</h1>
+      <p class="desc">Two layers, one registry between them. The platform is the governed factory; Loom is the human-facing storefront. The registry is the source of truth both sides agree on.</p>
+    </div>
+
+    <!-- Responsibilities container -->
+    <div class="container">
+      <div class="ctr-head"><h2>Responsibilities</h2><span class="ctr-sub">who owns what</span></div>
+      <div class="ctr-body">
+        <div class="cols">
+
+          <!-- LOOM -->
+          <div class="loom" style="border:1px solid var(--border-light); border-radius:16px;">
+            <div class="colhead">
+              <h3>Loom <span class="badge blue" style="vertical-align:middle;">Console</span></h3>
+              <span class="tag">Control plane &middot; the storefront</span>
+            </div>
+            <div class="colbody">
+              <div class="row"><span class="ic">&#128193;</span><span><span class="k">Browse the catalog.</span> <span class="d">Registry Agents / Tools / Skills read the GA registry (source of truth).</span></span></div>
+              <div class="row"><span class="ic">&#11015;</span><span><span class="k">Import a registry agent.</span> <span class="d">&ldquo;Not in Loom&rdquo; &rarr; Import &rarr; ARN / region &rarr; DB row keyed on registry_record_id.</span></span></div>
+              <div class="row"><span class="ic">&#128260;</span><span><span class="k">Sync.</span> <span class="d">Reconciles imported agents to the live registry on demand (registry wins).</span></span></div>
+              <div class="row"><span class="ic">&#127991;</span><span><span class="k">Imported / Not-in-Loom indicator.</span> <span class="d">Shows whether a registry agent has a local operational record.</span></span></div>
+              <div class="row"><span class="ic">&#9881;</span><span><span class="k">DB = operational cache.</span> <span class="d">Runtime state &mdash; endpoint status, sessions, deploy status &mdash; the registry can&rsquo;t hold.</span></span></div>
+              <div class="row"><span class="ic">&#128683;</span><span><span class="k">Agent creation hidden (config).</span> <span class="d">VITE_LOOM_AGENT_CREATION_ENABLED=false &mdash; Loom discovers &amp; imports, it does not mint agents.</span></span></div>
+            </div>
+          </div>
+
+          <!-- PLATFORM -->
+          <div class="plat" style="border:1px solid var(--border-light); border-radius:16px;">
+            <div class="colhead">
+              <h3>Platform (blueprint) <span class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid #f0d58a;vertical-align:middle;">Factory</span></h3>
+              <span class="tag">Landing zone &middot; the paved road</span>
+            </div>
+            <div class="colbody">
+              <div class="row"><span class="ic">&#127963;</span><span><span class="k">Accounts &amp; SCPs.</span> <span class="d">AgenticAI-Workloads OU + 8 Service Control Policies the BU can&rsquo;t override.</span></span></div>
+              <div class="row"><span class="ic">&#128296;</span><span><span class="k">Builds &amp; deploys agents.</span> <span class="d">CI/CD pipeline + ~28 phase-* conformance gates fail at synth, not in prod.</span></span></div>
+              <div class="row"><span class="ic">&#128210;</span><span><span class="k">Owns the GA registry.</span> <span class="d">RegistryStack creates it; publishes governed records (ARN, Cedar policy, ownership).</span></span></div>
+              <div class="row"><span class="ic">&#9989;</span><span><span class="k">Schema intake + approval.</span> <span class="d">Validates the record; DRAFT &rarr; APPROVED &rarr; discoverable.</span></span></div>
+              <div class="row"><span class="ic">&#128737;</span><span><span class="k">Runtime controls.</span> <span class="d">Cedar authz, guardrails, kill-switch, observability &mdash; per invocation.</span></span></div>
+              <div class="row"><span class="ic">&#127970;</span><span><span class="k">Workload accounts.</span> <span class="d">The agent actually runs here (AgentCore Runtime + endpoint).</span></span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Bridge container -->
+    <div class="container">
+      <div class="ctr-head"><h2>The bridge &mdash; the Registry</h2><span class="ctr-sub">how the two layers connect</span></div>
+      <div class="ctr-body">
+        <p style="margin:0 0 4px; font-size:13px; color:var(--text-secondary);">Platform publishes governed records &rarr; Loom reads them &rarr; import pulls the record into Loom&rsquo;s operational DB. One-directional: catalog / identity flows platform &rarr; registry &rarr; Loom; operational state stays in Loom&rsquo;s DB.</p>
+        <div class="flow">
+          <span class="chip">Platform deploys agent</span>
+          <span class="arr">&rarr;</span>
+          <span class="chip r">Registry record (APPROVED)</span>
+          <span class="arr">&rarr;</span>
+          <span class="chip">Loom reads registry</span>
+          <span class="arr">&rarr;</span>
+          <span class="chip">Import &rarr; DB row</span>
+          <span class="arr">&rarr;</span>
+          <span class="chip">Sync keeps it current</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The line container -->
+    <div class="container">
+      <div class="ctr-head"><h2>The line</h2><span class="ctr-sub">autonomy vs governance</span></div>
+      <div class="ctr-body">
+        <div class="line">
+          <div class="box"><span class="k" style="color:var(--awsblue);">Loom owns</span><span class="d">Discovery, import, operational state (sessions / status), the human console. &ldquo;What&rsquo;s running and how do I use it.&rdquo;</span></div>
+          <div class="box"><span class="k" style="color:var(--amber);">Platform owns</span><span class="d">Accounts, guardrails, pipeline gates, the registry, approval. &ldquo;What&rsquo;s allowed to exist and how safely.&rdquo;</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <span class="ai">&#9888;</span>
+      <span><strong>For this demo:</strong> agent-creation in Loom is turned OFF by config, so the story stays clean &mdash; the platform is the only thing that mints agents; Loom discovers, imports, and operates them. Registry is single-bound (one registry) for now. DB starts empty, so everything visible comes from the registry &mdash; that&rsquo;s the point, not a bug.</span>
+    </div>
+
+    <div class="footer-note">Agent Factory &middot; Demo architecture &middot; styled to AWS Cloudscape</div>
+  </div>
+</body>
+</html>

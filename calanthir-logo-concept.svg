@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="220" viewBox="0 0 640 220" font-family="'Segoe UI', 'Open Sans', system-ui, sans-serif">
+  <defs>
+    <!-- the "light within the stone" radial glow -->
+    <radialGradient id="orbCore" cx="50%" cy="45%" r="62%">
+      <stop offset="0%"  stop-color="#f3f8ff"/>
+      <stop offset="28%" stop-color="#8ec5ff"/>
+      <stop offset="68%" stop-color="#2f6efe"/>
+      <stop offset="100%" stop-color="#17235c"/>
+    </radialGradient>
+    <!-- outer aura -->
+    <radialGradient id="aura" cx="50%" cy="50%" r="50%">
+      <stop offset="55%" stop-color="#2f6efe" stop-opacity="0"/>
+      <stop offset="78%" stop-color="#5b8dff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#5b8dff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1b2a6b"/>
+      <stop offset="100%" stop-color="#2f6efe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- dark card so the glow reads (preview only) -->
+  <rect width="640" height="220" rx="18" fill="#0b1020"/>
+
+  <!-- MARK: seeing-stone orb -->
+  <g transform="translate(110,110)">
+    <circle r="86" fill="url(#aura)"/>
+    <circle r="62" fill="url(#orbCore)" stroke="#9cc3ff" stroke-opacity="0.25" stroke-width="1.5"/>
+    <!-- faint iris / horizon line: the "watcher" cue -->
+    <ellipse cx="0" cy="0" rx="62" ry="18" fill="none" stroke="#dcebff" stroke-opacity="0.35" stroke-width="1.5"/>
+    <!-- light rays escaping the stone -->
+    <g stroke="#bcd8ff" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round">
+      <line x1="0" y1="-74" x2="0" y2="-92"/>
+      <line x1="52" y1="-52" x2="65" y2="-65"/>
+      <line x1="74" y1="0" x2="92" y2="0"/>
+      <line x1="-52" y1="-52" x2="-65" y2="-65"/>
+    </g>
+    <!-- bright specular core -->
+    <circle cx="-16" cy="-20" r="12" fill="#ffffff" fill-opacity="0.75"/>
+  </g>
+
+  <!-- WORDMARK -->
+  <text x="222" y="122" font-size="56" font-weight="700" letter-spacing="1" fill="#eaf2ff">Calanthir</text>
+  <text x="224" y="152" font-size="15" font-weight="500" letter-spacing="4" fill="#7fa6e8">REALM OF LIGHT · AGENT PLATFORM</text>
+</svg>

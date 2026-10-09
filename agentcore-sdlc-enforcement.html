@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the Platform Enforces the SDLC Phase-In</title>
+<style>
+  :root {
+    --awsblue: #0972d3;
+    --awsblue-dark: #033160;
+    --navy: #232f3e;
+    --ink: #16191f;
+    --text: #0f1b2d;
+    --text-secondary: #5f6b7a;
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --border: #c6c6cd;
+    --border-light: #e9ebed;
+    --green: #037f0c;
+    --green-bg: #f2fcf3;
+    --amber: #8d6605;
+    --amber-bg: #fffbf0;
+    --amber-line: #e8a317;
+    --red: #d91515;
+    --red-bg: #fff7f7;
+    --purple: #6b2fb3;
+    --purple-bg: #f7f2fc;
+    --font: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+  .topnav { background: var(--navy); color:#fff; height:40px; display:flex; align-items:center; padding:0 20px; font-size:14px; }
+  .topnav .logo { font-weight:700; } .topnav .logo span { color:#ff9900; }
+  .topnav .crumb { margin-left:18px; color:#d5dbdb; font-size:13px; }
+  .wrap { max-width:1200px; margin:0 auto; padding:28px 24px 44px; }
+  .page-head h1 { font-size:25px; font-weight:700; margin:0 0 5px; color: var(--ink); }
+  .page-head .desc { font-size:14px; color: var(--text-secondary); margin:0 0 22px; max-width:960px; line-height:1.5; }
+
+  .principle { display:flex; gap:12px; padding:15px 18px; border-radius:12px; border:1px solid #a5cdf5; background:#f0f7ff; color: var(--awsblue-dark); font-size:14px; margin-bottom:18px; line-height:1.55; }
+  .principle .ic { color: var(--awsblue); font-weight:700; font-size:16px; }
+  .principle b { color: var(--ink); }
+
+  .pipe-card { background: var(--surface); border:1px solid var(--border-light); border-radius:16px; box-shadow:0 1px 2px rgba(0,28,36,.08); padding:30px 28px 24px; }
+  .pipe-head { display:flex; align-items:baseline; gap:10px; margin-bottom:26px; }
+  .pipe-head h2 { font-size:17px; font-weight:700; margin:0; color:var(--ink); }
+  .pipe-head .sub { font-size:12.5px; color:var(--text-secondary); }
+
+  /* the promotion track: Dev -> PreProd -> Prod, each promotion blocked by a gate */
+  .track { position:relative; display:flex; align-items:stretch; }
+  .stage-col { flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .env { width:100%; border-radius:12px; padding:14px 12px; border:1px solid; min-height:150px; }
+  .env .en { font-weight:700; font-size:14px; display:block; margin-bottom:3px; }
+  .env .ed { font-size:11px; opacity:.9; margin-bottom:9px; }
+  .env ul { list-style:none; margin:0; padding:0; text-align:left; }
+  .env li { font-size:11.5px; padding:3px 0; line-height:1.3; }
+  .env.dev  { background: var(--green-bg); border-color:#cdebd0; } .env.dev .en  { color: var(--green); }
+  .env.pre  { background: var(--amber-bg); border-color:#f0d58a; } .env.pre .en  { color: var(--amber); }
+  .env.prod { background: var(--red-bg);   border-color:#f5b7b7; } .env.prod .en { color: var(--red); }
+
+  /* gate between stages */
+  .gate-col { width:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 4px; }
+  .gate-chip { background: var(--surface); border:3px solid var(--amber-line); border-radius:12px; padding:10px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,28,36,.1); }
+  .gate-chip .gi { font-size:20px; } .gate-chip .gt { font-size:11px; font-weight:700; color:var(--amber); display:block; margin-top:3px; line-height:1.25; }
+  .gate-col .checks { font-size:10px; color:var(--text-secondary); margin-top:8px; text-align:center; line-height:1.4; }
+  .gate-col .arr { color:var(--amber-line); font-size:18px; font-weight:700; margin:6px 0; }
+
+  /* the three enforcement mechanisms */
+  .mechs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:16px; }
+  .mech { border:1px solid var(--border-light); border-radius:12px; overflow:hidden; background:var(--surface); }
+  .mech .mh { padding:12px 15px; font-weight:700; font-size:13.5px; border-bottom:1px solid var(--border-light); display:flex; align-items:center; gap:8px; }
+  .mech.m1 .mh { background:var(--amber-bg); color:var(--amber); }
+  .mech.m2 .mh { background:#f0f7ff; color:var(--awsblue); }
+  .mech.m3 .mh { background:var(--purple-bg); color:var(--purple); }
+  .mech .mb { padding:12px 15px; font-size:12.5px; color:var(--text); line-height:1.5; }
+  .mech .mb b { color:var(--ink); }
+
+  .alert { display:flex; gap:12px; padding:14px 16px; border-radius:12px; border:1px solid #cdebd0; background:var(--green-bg); color:var(--green); font-size:13.5px; margin-top:16px; line-height:1.55; }
+  .alert b { color: var(--ink); }
+  .alert .ic { font-size:16px; }
+  .footer-note { margin-top:20px; font-size:12px; color: var(--text-secondary); text-align:center; }
+
+  @media (max-width: 900px) {
+    .track { flex-direction:column; }
+    .gate-col { width:100%; flex-direction:row; gap:12px; padding:10px 0; }
+    .gate-col .arr { transform:rotate(90deg); }
+    .mechs { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="topnav">
+    <span class="logo">aws<span>&nbsp;</span></span>
+    <span class="crumb">Agent Factory &rsaquo; SDLC &rsaquo; How the platform enforces the phase-in</span>
+  </div>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>The Platform Enforces the Phase-In</h1>
+      <p class="desc">Picture&nbsp;A showed <strong>which</strong> controls turn on when. This shows <strong>how</strong> &mdash; the platform doesn&rsquo;t <em>advise</em> the roadmap, it <strong>enforces</strong> it. A loose dev config is not a policy violation to catch later; it is <strong>structurally un-promotable</strong> to prod.</p>
+    </div>
+
+    <div class="principle">
+      <span class="ic">&#9432;</span>
+      <span>The best practices aren&rsquo;t a document teams follow by hand &mdash; <b>the platform IS the standard, wired into the paved road.</b> Doing it the easy way and doing it the secure way are the same way. A team can&rsquo;t ship a prod agent with <code>auth=None</code> any more than they can skip the pipeline.</span>
+    </div>
+
+    <!-- the promotion track with gates between stages -->
+    <div class="pipe-card">
+      <div class="pipe-head"><h2>Promotion is gated &mdash; each stage must EARN the next</h2><span class="sub">no direct-deploy into any environment</span></div>
+
+      <div class="track">
+        <!-- DEV -->
+        <div class="stage-col">
+          <div class="env dev">
+            <span class="en">&#128295; Dev</span>
+            <span class="ed">isolated cell &middot; zero blast radius</span>
+            <ul>
+              <li>auth: None &nbsp;<span style="color:var(--text-secondary);">(safe here)</span></li>
+              <li>public endpoints</li>
+              <li>synthetic data only</li>
+              <li>guardrail + tags + allow-list ON</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- GATE 1 -->
+        <div class="gate-col">
+          <div class="gate-chip"><span class="gi">&#9940;</span><span class="gt">Conformance gate</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="checks">PR &rarr; synth &rarr; policy &amp; image gates &rarr; permission handoff. Fails the build if the next stage&rsquo;s required controls aren&rsquo;t set.</div>
+        </div>
+
+        <!-- PRE-PROD -->
+        <div class="stage-col">
+          <div class="env pre">
+            <span class="en">&#129666; Pre-Prod</span>
+            <span class="ed">masked data &middot; prod-shaped</span>
+            <ul>
+              <li>Custom JWT introduced</li>
+              <li>private connectivity introduced</li>
+              <li>masked / de-identified data</li>
+              <li>full eval suite</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- GATE 2 -->
+        <div class="gate-col">
+          <div class="gate-chip"><span class="gi">&#9989;</span><span class="gt">Evidence gate</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="checks">Eval runs on the DEPLOYED runtime. A human approves the EVIDENCE &mdash; fail-closed. No evidence, no promotion.</div>
+        </div>
+
+        <!-- PROD -->
+        <div class="stage-col">
+          <div class="env prod">
+            <span class="en">&#128142; Prod</span>
+            <span class="ed">real PHI &middot; full controls</span>
+            <ul>
+              <li>Custom JWT enforced</li>
+              <li>private enforced + egress-filtered</li>
+              <li>real PHI &mdash; controls on</li>
+              <li>guardrail fail-closed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- three enforcement mechanisms -->
+    <div class="mechs">
+      <div class="mech m1">
+        <div class="mh">&#9940; No direct-deploy</div>
+        <div class="mb">Nobody hand-carries a config into a workstream account. <b>Everything flows PR &rarr; synth &rarr; gates &rarr; deploy.</b> A dev shortcut has no path to prod that skips the gates &mdash; so it simply can&rsquo;t drift there.</div>
+      </div>
+      <div class="mech m2">
+        <div class="mh">&#128269; Gate fails the build</div>
+        <div class="mb">The conformance check runs <b>at <code>cdk synth</code>, before anything deploys.</b> A prod-targeted stack with <code>auth=None</code>, a public endpoint, or a missing guardrail <b>fails the build</b> &mdash; the loose config never reaches real data.</div>
+      </div>
+      <div class="mech m3">
+        <div class="mh">&#128221; Deployed &ne; usable</div>
+        <div class="mb">Even a deployed agent isn&rsquo;t usable org-wide until it passes <b>registry intake + human approval.</b> A second net under the drift risk &mdash; being <i>deployed</i> doesn&rsquo;t make it <i>discoverable</i> or <i>callable</i>.</div>
+      </div>
+    </div>
+
+    <div class="alert">
+      <span class="ic">&#9989;</span>
+      <span><b>The payoff for Wellmark:</b> you don&rsquo;t hand teams a security-SDLC standard and hope they follow it. The platform makes the secure path the <b>only</b> path &mdash; teams inherit the posture, move fast inside isolated dev cells, and <b>cannot</b> promote a loose config to where it would matter. Fast and safe stop being a tradeoff.</span>
+    </div>
+
+    <div class="footer-note">Agent Factory &middot; AgentCore SDLC enforcement &middot; styled to AWS Cloudscape</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore SDLC — Control Phase-In (Dev → Prod)</title>
+<style>
+  :root {
+    --awsblue: #0972d3;
+    --awsblue-dark: #033160;
+    --navy: #232f3e;
+    --ink: #16191f;
+    --text: #0f1b2d;
+    --text-secondary: #5f6b7a;
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --border: #c6c6cd;
+    --border-light: #e9ebed;
+    --green: #037f0c;
+    --green-bg: #f2fcf3;
+    --amber: #8d6605;
+    --amber-bg: #fffbf0;
+    --red: #d91515;
+    --red-bg: #fff7f7;
+    --purple: #6b2fb3;
+    --purple-bg: #f7f2fc;
+    --font: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+  .topnav { background: var(--navy); color:#fff; height:40px; display:flex; align-items:center; padding:0 20px; font-size:14px; }
+  .topnav .logo { font-weight:700; } .topnav .logo span { color:#ff9900; }
+  .topnav .crumb { margin-left:18px; color:#d5dbdb; font-size:13px; }
+  .wrap { max-width:1200px; margin:0 auto; padding:28px 24px 44px; }
+  .page-head h1 { font-size:25px; font-weight:700; margin:0 0 5px; color: var(--ink); }
+  .page-head .desc { font-size:14px; color: var(--text-secondary); margin:0 0 22px; max-width:960px; line-height:1.5; }
+
+  .container { background: var(--surface); border:1px solid var(--border-light); border-radius:14px; box-shadow:0 1px 1px rgba(0,28,36,.08); overflow:hidden; }
+  .container + .container { margin-top:16px; }
+  .ctr-head { padding:14px 20px; border-bottom:1px solid var(--border-light); display:flex; align-items:baseline; gap:10px; }
+  .ctr-head h2 { font-size:17px; font-weight:700; margin:0; color: var(--ink); }
+  .ctr-head .ctr-sub { font-size:12.5px; color: var(--text-secondary); }
+  .ctr-body { padding:18px 20px; }
+
+  /* principle banner */
+  .principle { display:flex; gap:12px; padding:15px 18px; border-radius:12px; border:1px solid #a5cdf5; background:#f0f7ff; color: var(--awsblue-dark); font-size:14px; margin-bottom:18px; line-height:1.55; }
+  .principle .ic { color: var(--awsblue); font-weight:700; font-size:16px; }
+  .principle b { color: var(--ink); }
+
+  /* stage table */
+  table.phase { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.phase th, table.phase td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border-light); vertical-align:top; }
+  table.phase thead th { font-size:13px; background:#fafbfc; }
+  table.phase thead th.dev  { color: var(--green);  }
+  table.phase thead th.pre  { color: var(--amber);  }
+  table.phase thead th.prod { color: var(--red);    }
+  table.phase thead th.dim  { background:var(--navy); color:#fff; border-top-left-radius:8px; }
+  table.phase td.ctrl { font-weight:700; color: var(--ink); white-space:nowrap; background:#fafbfc; }
+  .pill { display:inline-block; padding:3px 9px; border-radius:12px; font-size:11.5px; font-weight:700; border:1px solid; }
+  .pill.on   { color: var(--green); background: var(--green-bg); border-color:#b7eb8f; }
+  .pill.off  { color: var(--text-secondary); background:#f1f3f5; border-color:#dde1e5; }
+  .pill.intro{ color: var(--amber); background: var(--amber-bg); border-color:#f0d58a; }
+  .pill.enf  { color: var(--red); background: var(--red-bg); border-color:#f5b7b7; }
+  td .sub { display:block; font-size:11px; color:var(--text-secondary); font-weight:400; margin-top:2px; }
+
+  /* two-bucket split */
+  .buckets { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .bucket { border:1px solid var(--border-light); border-radius:12px; overflow:hidden; }
+  .bucket .bh { padding:12px 16px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .bucket.day0 .bh { background: var(--green-bg); color: var(--green); border-bottom:1px solid #cdebd0; }
+  .bucket.phase .bh { background: var(--amber-bg); color: var(--amber); border-bottom:1px solid #f0d58a; }
+  .bucket ul { list-style:none; margin:0; padding:10px 16px; }
+  .bucket li { font-size:12.5px; padding:7px 0; border-bottom:1px solid var(--border-light); line-height:1.4; }
+  .bucket li:last-child { border-bottom:none; }
+  .bucket li b { color: var(--ink); }
+  .bucket li .trig { display:block; font-size:11px; color: var(--text-secondary); margin-top:2px; }
+
+  .alert { display:flex; gap:12px; padding:14px 16px; border-radius:12px; border:1px solid #f0d58a; background:var(--amber-bg); color:var(--amber); font-size:13px; margin-top:16px; line-height:1.5; }
+  .alert b { color: var(--ink); }
+  .alert .ic { font-size:16px; }
+  .footer-note { margin-top:20px; font-size:12px; color: var(--text-secondary); text-align:center; }
+
+  @media (max-width: 860px) { .buckets { grid-template-columns:1fr; } table.phase { font-size:11.5px; } }
+</style>
+</head>
+<body>
+  <div class="topnav">
+    <span class="logo">aws<span>&nbsp;</span></span>
+    <span class="crumb">Agent Factory &rsaquo; SDLC &rsaquo; Dev &rarr; Prod control phase-in</span>
+  </div>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>AgentCore SDLC &mdash; Which Controls, When</h1>
+      <p class="desc">A practical dev&rarr;prod roadmap: some controls are <strong style="color:var(--green);">on from day&nbsp;0</strong> (they cost no speed), others <strong style="color:var(--amber);">phase in</strong> as the environment gains real data and real connectivity. The platform turns each on at the right stage &mdash; teams inherit the posture instead of re-deriving it.</p>
+    </div>
+
+    <!-- governing principle -->
+    <div class="principle">
+      <span class="ic">&#9432;</span>
+      <span>The dividing line is <b>blast radius, not developer convenience.</b> <code>auth=None</code> is safe in dev <b>not because dev is low-stakes</b> &mdash; but because the dev cell is isolated with <b>no real data and no production connectivity.</b> The moment either appears, the control must too.</span>
+    </div>
+
+    <!-- the roadmap table -->
+    <div class="container">
+      <div class="ctr-head"><h2>The control phase-in</h2><span class="ctr-sub">loose in an isolated sandbox &middot; strict as real PHI &amp; real callers appear</span></div>
+      <div class="ctr-body" style="padding:0;">
+        <table class="phase">
+          <thead>
+            <tr>
+              <th class="dim">Control</th>
+              <th class="dev">&#128295; Dev <span style="font-weight:400;font-size:11px;">(isolated sandbox)</span></th>
+              <th class="pre">&#129666; Pre-Prod <span style="font-weight:400;font-size:11px;">(masked data)</span></th>
+              <th class="prod">&#128142; Prod <span style="font-weight:400;font-size:11px;">(real PHI)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ctrl">MCP / Gateway auth</td>
+              <td><span class="pill off">None</span><span class="sub">OK &mdash; isolated cell only</span></td>
+              <td><span class="pill intro">Custom JWT introduced</span></td>
+              <td><span class="pill enf">Custom JWT enforced</span><span class="sub">allowedClients validated</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Connectivity</td>
+              <td><span class="pill off">Public OK</span></td>
+              <td><span class="pill intro">Private introduced</span><span class="sub">PrivateLink / Lattice</span></td>
+              <td><span class="pill enf">Private enforced</span><span class="sub">egress-filtered</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Data</td>
+              <td><span class="pill off">Synthetic only</span><span class="sub">never real PHI</span></td>
+              <td><span class="pill intro">Masked / de-identified</span></td>
+              <td><span class="pill enf">Real PHI &mdash; controls on</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Guardrail (content)</td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill enf">ON &middot; fail-closed</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Eval gate</td>
+              <td><span class="pill off">Smoke</span></td>
+              <td><span class="pill intro">Full suite</span></td>
+              <td><span class="pill enf">Gated &middot; human approves evidence</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Model allow-list</td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">5-tag attribution</td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+            </tr>
+            <tr>
+              <td class="ctrl">Registry-approved tools only</td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+              <td><span class="pill on">ON</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- the two buckets -->
+    <div class="container">
+      <div class="ctr-head"><h2>Two buckets</h2><span class="ctr-sub">the mental model behind the table</span></div>
+      <div class="ctr-body">
+        <div class="buckets">
+          <div class="bucket day0">
+            <div class="bh">&#9989; ON from day&nbsp;0 &mdash; never relaxed</div>
+            <ul>
+              <li><b>Guardrail content scanning</b> &mdash; an agent is semi-trusted (prompt-injection-steerable) from its first run.</li>
+              <li><b>Model allow-list</b> &mdash; no ungoverned model access, ever.</li>
+              <li><b>5-tag attribution</b> &mdash; free upfront; painful to retrofit.</li>
+              <li><b>Registry-approved tools only</b> &mdash; gateway wires only to approved targets.</li>
+              <li><b>Dev-cell isolation</b> &mdash; this is <i>what makes relaxing the others safe.</i></li>
+            </ul>
+          </div>
+          <div class="bucket phase">
+            <div class="bh">&#9203; Phase in &mdash; gated on real data / real callers</div>
+            <ul>
+              <li><b>Authentication (Custom JWT)</b><span class="trig">Trigger: shared services or any non-synthetic data &mdash; not a calendar date.</span></li>
+              <li><b>Private connectivity</b><span class="trig">Trigger: data worth protecting in transit, or a private dependency.</span></li>
+              <li><b>Strict / gated evals</b><span class="trig">Smoke &rarr; full suite &rarr; fail-closed gate.</span></li>
+              <li><b>Real data</b><span class="trig">Synthetic &rarr; masked &rarr; real &mdash; each step gated by the controls above first.</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- the drift point -->
+    <div class="alert">
+      <span class="ic">&#9888;&#65039;</span>
+      <span><b>The real risk isn&rsquo;t <code>auth=None</code> in dev &mdash; it&rsquo;s config drift.</b> A loose dev setting silently surviving into an environment that gained real data. The platform makes that <b>structurally impossible:</b> no direct-deploy, and the conformance gate fails a prod-targeted stack that still has <code>auth=None</code>, a public endpoint, or a missing guardrail &mdash; before it deploys. (That enforcement is the second picture.)</span>
+    </div>
+
+    <div class="footer-note">Agent Factory &middot; AgentCore SDLC &middot; styled to AWS Cloudscape</div>
+  </div>
+</body>
+</html>
