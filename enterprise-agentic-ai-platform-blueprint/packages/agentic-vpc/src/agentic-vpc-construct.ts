@@ -85,6 +85,7 @@ import {
   PhysicalResourceId,
 } from 'aws-cdk-lib/custom-resources';
 import { StringParameter, StringListParameter } from 'aws-cdk-lib/aws-ssm';
+import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import { allowedModelArns, PLATFORM_ALLOWED_MODELS } from '@agenticai/platform-baselines';
 import { resolveAgentCoreSupportedAvailabilityZoneIds } from './agentcore-supported-azs';
@@ -482,6 +483,18 @@ export class AgenticVpcConstruct extends Construct {
           }),
         ]),
       });
+      NagSuppressions.addResourceSuppressions(
+        describeSubnets,
+        [
+          {
+            id: 'AwsSolutions-IAM5',
+            appliesTo: ['Resource::*'],
+            reason:
+              'SEC-011: ec2:DescribeSubnets and ec2:DescribeAvailabilityZones are account-wide list/describe operations that do not support resource-level permissions; Resource:* is required by the EC2 API.',
+          },
+        ],
+        true,
+      );
       const compatibleSubnetIds = workloadSubnets.map((_, idx) =>
         describeSubnets.getResponseField(`Subnets.${idx}.SubnetId`),
       );
