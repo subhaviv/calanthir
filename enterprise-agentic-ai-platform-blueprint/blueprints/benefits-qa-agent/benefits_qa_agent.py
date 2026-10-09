@@ -1,11 +1,8 @@
 """
 benefits-qa-agent — AgenticAI chatbot blueprint, Benefits Q&A pattern.
 
-Extends the agenticai-chatbot-agent base with:
-  - PPO benefits knowledge-base grounding (RAG via AgentCore Memory)
-  - Structured benefit lookups: deductibles, OOP max, copays, prior auth
-  - HITL escalation for coverage disputes and prior-auth decisions
-  - Member service rep (MSR) context — internal tool, not member-facing
+PPO plan knowledge is embedded in the system prompt — no RAG/KB required.
+Designed for member service representative (MSR) use, not member-facing.
 
 All guardrail identifiers are required at construction time (R-BED-028).
 
@@ -15,14 +12,13 @@ SPDX-License-Identifier: MIT-0
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Protocol
 
 log = logging.getLogger(__name__)
 
-# ── Escalation triggers ────────────────────────────────────────────────────────
-# Coverage disputes and prior-auth decisions MUST route to a licensed reviewer.
-_HARD_ESCALATION_PHRASES = (
+# Escalation triggers — coverage decisions MUST route to a licensed reviewer.
+_ESCALATION_MARKERS = (
     "coverage dispute",
     "coverage denial",
     "prior authorization",
@@ -34,6 +30,12 @@ _HARD_ESCALATION_PHRASES = (
     "hitl_required",
     "<escalate/>",
     "cannot_resolve",
+)
+
+_ESCALATION_RESPONSE = (
+    "This request requires review by a licensed benefits specialist. "
+    "I've flagged it for a human agent — they'll follow up shortly. "
+    "Is there anything else I can clarify in the meantime?"
 )
 
 
@@ -48,91 +50,38 @@ class LLMClient(Protocol):
     ) -> str: ...
 
 
-class KnowledgeBaseClient(Protocol):
-    """Thin wrapper around AgentCore Memory / Bedrock KB retrieval."""
-
-    def retrieve(self, query: str, *, kb_id: str, top_k: int = 5) -> list[str]: ...
-
-
 @dataclass(frozen=True)
 class BenefitsQAConfig:
-    """Runtime configuration for the Benefits Q&A agent.
-
-    Parameters
-    ----------
-    tenant_id / agent_id / env_name:
-        Standard AgenticAI identifiers for cost allocation and tagging.
-    inference_profile_arn:
-        ApplicationInferenceProfile ARN from the workload stack output.
-    guardrail_identifier:
-        Bedrock Guardrail ID — mandatory (R-BED-028 + SCP-02).
-    kb_id:
-        AgentCore Memory / Bedrock Knowledge Base ID for the PPO plan corpus.
-    plan_year:
-        Plan year string used in context injection, e.g. "2026".
-    guardrail_version:
-        Defaults to "DRAFT" for non-prod; set "1" (or latest published) in prod.
-    max_turns_per_session:
-        Hard cap before auto-escalation (prevents runaway conversations).
-    stream:
-        Whether to enable streaming responses.
-    hitl_hand_off:
-        Callable invoked with full message history when escalation is triggered.
-        Must be wired to the SQS escalation queue at deployment time.
-    memory_namespace:
-        Optional AgentCore Memory namespace for cross-session recall.
-    """
+    """Runtime configuration for the Benefits Q&A agent."""
 
     tenant_id: str
     agent_id: str
     env_name: str
     inference_profile_arn: str
     guardrail_identifier: str
-    kb_id: str
     plan_year: str = "2026"
     guardrail_version: str = "DRAFT"
     max_turns_per_session: int = 40
     stream: bool = True
     hitl_hand_off: Callable[[list[dict[str, str]]], None] | None = None
-    memory_namespace: str = ""
-    top_k_chunks: int = 5
 
     def __post_init__(self) -> None:
         if not self.guardrail_identifier:
             raise ValueError(
                 "guardrail_identifier is mandatory (R-BED-028 + SCP-02 + IAM deny + VPCE policy)"
             )
-        if not self.kb_id:
-            raise ValueError("kb_id is required — benefits Q&A requires a grounded knowledge base")
 
 
-@dataclass
 class BenefitsQAAgent:
     """Benefits Q&A agent for member service representative (MSR) use.
 
-    The agent answers PPO plan questions grounded in the benefits knowledge
-    base. It does NOT make coverage determinations — those require a licensed
-    reviewer and trigger HITL escalation automatically.
-
-    Usage
-    -----
-    Instantiate once per service, call `reply()` per message turn. Pass the
-    full session history on each call (stateless design; session state lives
-    in the caller).
+    PPO plan knowledge is embedded in the system prompt. The agent answers
+    benefits questions and escalates coverage decisions to a human reviewer.
     """
 
-    config: BenefitsQAConfig
-    llm: LLMClient
-    kb: KnowledgeBaseClient
-    _system_prompt: str = field(default="", init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        try:
-            import importlib.resources as _res
-            pkg = _res.files(__package__ or __name__).joinpath("prompts/system.txt")
-            self._system_prompt = pkg.read_text(encoding="utf-8")
-        except Exception:
-            self._system_prompt = _FALLBACK_SYSTEM_PROMPT
+    def __init__(self, config: BenefitsQAConfig, llm: LLMClient) -> None:
+        self.config = config
+        self.llm = llm
 
     def reply(
         self,
@@ -150,33 +99,15 @@ class BenefitsQAAgent:
         actor_id:
             MSR employee ID or SSO subject — required for audit (spec §3.4.6).
         member_id:
-            Optional member identifier forwarded to escalation payload for
-            lookup continuity. Never logged verbatim (PII — guardrails enforce).
+            Optional member identifier forwarded to escalation payload.
         """
         if not actor_id:
             raise ValueError("actor_id is required (spec §3.4.6) — MSR employee ID or SSO subject")
 
         if len(session_messages) > self.config.max_turns_per_session * 2:
-            return self._escalate(
-                session_messages,
-                reason="session_length_cap",
-                member_id=member_id,
-            )
+            return self._escalate(session_messages, reason="session_length_cap", member_id=member_id)
 
-        # Ground the last user message in the benefits KB.
-        user_text = _last_user_text(session_messages)
-        grounding_chunks = self.kb.retrieve(
-            user_text,
-            kb_id=self.config.kb_id,
-            top_k=self.config.top_k_chunks,
-        )
-
-        messages = _inject_context(
-            session_messages,
-            system_prompt=self._system_prompt,
-            grounding_chunks=grounding_chunks,
-            plan_year=self.config.plan_year,
-        )
+        messages = [{"role": "system", "content": _build_system_prompt(self.config.plan_year)}] + list(session_messages)
 
         response = self.llm.invoke(
             messages,
@@ -194,61 +125,104 @@ class BenefitsQAAgent:
 
         return response
 
-    def _escalate(
-        self,
-        messages: list[dict[str, str]],
-        reason: str,
-        member_id: str,
-    ) -> str:
-        log.info(
-            "benefits_qa.escalate reason=%s actor_id=<redacted> member_id=<redacted>",
-            reason,
-        )
+    def _escalate(self, messages: list[dict[str, str]], reason: str, member_id: str) -> str:
+        log.info("benefits_qa.escalate reason=%s", reason)
         if self.config.hitl_hand_off:
             payload = list(messages)
             if member_id:
                 payload = [{"role": "system", "content": f"member_id_ref={member_id}"}] + payload
             self.config.hitl_hand_off(payload)
-        return (
-            "This request requires review by a licensed benefits specialist. "
-            "I've flagged it for a human agent — they'll follow up shortly. "
-            "Is there anything else I can help clarify while you wait?"
-        )
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-def _last_user_text(messages: list[dict[str, str]]) -> str:
-    for msg in reversed(messages):
-        if msg.get("role") == "user":
-            return msg.get("content", "")
-    return ""
+        return _ESCALATION_RESPONSE
 
 
 def _needs_escalation(response: str) -> bool:
     lower = response.lower()
-    return any(phrase in lower for phrase in _HARD_ESCALATION_PHRASES)
+    return any(marker in lower for marker in _ESCALATION_MARKERS)
 
 
-def _inject_context(
-    messages: list[dict[str, str]],
-    *,
-    system_prompt: str,
-    grounding_chunks: list[str],
-    plan_year: str,
-) -> list[dict[str, str]]:
-    """Prepend a system turn with the grounded benefits context."""
-    context_block = "\n\n".join(grounding_chunks) if grounding_chunks else ""
-    full_system = (
-        f"{system_prompt}\n\n"
-        f"## Plan Year\n{plan_year}\n\n"
-        f"## Retrieved Benefits Context\n{context_block}"
-    ).strip()
-    return [{"role": "system", "content": full_system}] + list(messages)
+def _build_system_prompt(plan_year: str) -> str:
+    return f"""You are a Benefits Q&A assistant for member service representatives (MSRs).
+Plan Year: {plan_year}
 
+Your role is to help MSRs quickly and accurately answer member questions about PPO plan benefits.
 
-_FALLBACK_SYSTEM_PROMPT = (
-    "You are a benefits Q&A assistant for member service representatives. "
-    "Answer only from the retrieved benefits context. "
-    "Emit <escalate/> for coverage disputes, prior auth decisions, and anything requiring a licensed reviewer."
-)
+## PPO PLAN BENEFITS — {plan_year}
+
+### Deductibles
+- Individual (in-network): $1,500/year
+- Family (in-network): $3,000/year
+- Individual (out-of-network): $3,000/year
+- Family (out-of-network): $6,000/year
+
+### Out-of-Pocket Maximums
+- Individual (in-network): $4,500/year
+- Family (in-network): $9,000/year
+- Individual (out-of-network): $9,000/year
+- Family (out-of-network): $18,000/year
+Once the OOP max is met, the plan pays 100% of covered in-network services.
+
+### Medical Cost-Share (after deductible unless noted)
+- Primary care visit (in-network): $30 copay
+- Primary care visit (out-of-network): 40% coinsurance
+- Specialist visit (in-network): $60 copay
+- Specialist visit (out-of-network): 40% coinsurance
+- Urgent care (in-network): $75 copay
+- Emergency room: $350 copay (waived if admitted); applies in- or out-of-network
+- Inpatient hospital (in-network): 20% coinsurance after deductible
+- Outpatient surgery (in-network): 20% coinsurance after deductible
+- Outpatient lab (in-network): $20 copay
+- Outpatient imaging / X-ray (in-network): $50 copay
+- Advanced imaging / MRI / CT (in-network): 20% coinsurance after deductible
+- Mental health outpatient visit (in-network): $30 copay
+- Mental health inpatient (in-network): 20% coinsurance after deductible
+
+### Preventive Care
+ACA-mandated preventive services (annual wellness, recommended screenings, immunizations,
+contraceptive services) are covered at $0 cost-share in-network with no deductible.
+
+### Pharmacy (retail 30-day supply)
+- Tier 1 Preferred Generic: $10
+- Tier 2 Non-Preferred Generic: $25
+- Tier 3 Preferred Brand: $60 (after $200 pharmacy deductible)
+- Tier 4 Non-Preferred Brand: $90 (after $200 pharmacy deductible)
+- Tier 5 Specialty: 25% coinsurance, max $250/fill (prior auth required)
+
+Mail-order (90-day): approximately 2.5x the 30-day cost-share.
+
+### Network and Referrals
+- This is a PPO plan. Referrals to specialists are NOT required.
+- In-network providers are contracted and accept the plan's allowed amount — no balance billing.
+- Out-of-network providers may balance-bill the member above the plan's allowed amount.
+
+### Prior Authorization Requirements
+Required before services are rendered:
+- Inpatient hospital admissions (non-emergency)
+- Inpatient mental health and substance use disorder treatment
+- Advanced imaging (MRI, CT, PET) for select diagnoses
+- Durable Medical Equipment over $500
+- Home health care (more than 20 visits/year)
+- Skilled nursing facility stays
+- Transplant services
+- Tier 5 specialty drugs
+
+### Excluded Services
+Not covered: cosmetic surgery, routine dental, routine vision, hearing aids,
+custodial care, long-term care, experimental/investigational treatments,
+fertility treatments (beyond diagnosis), services outside the US (except emergency).
+
+### Claims Filing
+- In-network: provider submits directly
+- Out-of-network: member submits within 365 days of service
+- EOB is not a bill; it shows what was billed, allowed, plan paid, and member responsibility
+
+## Rules
+1. Be precise — quote plan values (e.g., "$30 copay for primary care in-network").
+2. Always distinguish in-network vs. out-of-network when quoting cost-share.
+3. Do not quote dollar amounts not in the plan data above.
+4. Do not give medical advice or recommend specific providers.
+5. Never disclose PII or internal system identifiers.
+6. Keep answers concise — MSRs are on calls.
+7. Emit <escalate/> for: coverage determinations for specific claims, prior auth
+   decisions or denials, appeals, grievances, medical necessity reviews, anything
+   requiring a licensed reviewer. Do NOT make these decisions yourself.
+"""

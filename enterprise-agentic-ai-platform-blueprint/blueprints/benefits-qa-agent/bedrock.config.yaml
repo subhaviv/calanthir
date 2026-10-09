@@ -22,12 +22,11 @@ hitl:
     - session_length_cap
 
 knowledgeBase:
-  required: true
-  # kb_id is injected at runtime from the RagKnowledgeBaseConstruct stack output.
-  # Load the PPO benefits documents (SBCs, formularies, EOC) into the KB before
-  # enabling this agent in a workload account.
-  corpus: ppo-benefits-documents
-  top_k: 5
+  required: false
+  # PPO plan data is embedded in the system prompt (prompts/system.txt).
+  # To switch to RAG-grounded mode, set required: true, wire kb_id from the
+  # RagKnowledgeBaseConstruct stack output, and upload corpus docs to the
+  # RAG S3 bucket under ppo-benefits/.
 
 memory:
   # AgentCore Memory for cross-session MSR context (call notes, prior lookups).
