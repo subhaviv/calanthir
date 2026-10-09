@@ -17,3 +17,8 @@ export {
   AgentCoreRuntimeConstruct,
   type AgentCoreRuntimeConstructProps,
 } from './runtime-construct';
+
+export {
+  AgentCoreRuntimeProvisioner,
+  type AgentCoreRuntimeProvisionerProps,
+} from './runtime-provisioner';

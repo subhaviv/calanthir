@@ -470,6 +470,10 @@ switch (stage) {
         agentId: String(agentId),
         tenantId: String(tenantId),
         costCentre: String(costCentre),
+        benefitsQaA2aEndpointUrl:
+          typeof app.node.tryGetContext("agenticai/benefitsQaA2aEndpointUrl") === "string"
+            ? String(app.node.tryGetContext("agenticai/benefitsQaA2aEndpointUrl"))
+            : undefined,
       });
       const inferenceGatewayStack = new InferenceGatewayStack(
         app,
@@ -588,6 +592,14 @@ switch (stage) {
               : undefined,
           monthlyBudgetUsd:
             typeof monthlyBudgetUsd === "number" ? monthlyBudgetUsd : undefined,
+          benefitsQaImageUri:
+            typeof app.node.tryGetContext("agenticai/benefitsQaImageUri") === "string"
+              ? String(app.node.tryGetContext("agenticai/benefitsQaImageUri"))
+              : undefined,
+          benefitsQaGuardrailId:
+            typeof app.node.tryGetContext("agenticai/benefitsQaGuardrailId") === "string"
+              ? String(app.node.tryGetContext("agenticai/benefitsQaGuardrailId"))
+              : undefined,
         },
       );
       appStack.addDependency(networkStack);

@@ -23,6 +23,7 @@ import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { AgentCoreGatewayConstruct, ApiGatewayFronting } from '@agenticai/agentcore-gateway';
 import { AgentCoreIdentityConstruct } from '@agenticai/agentcore-identity';
 import { AgenticApp } from '@agenticai/agentic-app';
+import { AgentCoreRuntimeProvisioner } from '@agenticai/agentcore-runtime';
 import { RagKnowledgeBaseConstruct } from '@agenticai/rag';
 import {
   OamSourceLinkConstruct,
@@ -79,6 +80,16 @@ export interface WorkloadAppStackProps extends StackProps {
 
   /** Operator notification address for budget alerts. */
   readonly notificationEmail?: string;
+
+  /**
+   * ECR image URI (with digest) for the benefits-qa agent container.
+   * When supplied, the stack calls CreateAgentRuntime via AwsCustomResource
+   * so the runtime slot is tracked in CloudFormation.
+   * Example: `123456789012.dkr.ecr.us-east-1.amazonaws.com/repo:tag@sha256:…`
+   */
+  readonly benefitsQaImageUri?: string;
+  /** Guardrail ID to inject into the benefits-qa runtime container. */
+  readonly benefitsQaGuardrailId?: string;
 }
 
 export class WorkloadAppStack extends Stack {
@@ -88,6 +99,7 @@ export class WorkloadAppStack extends Stack {
   readonly apiGatewayFront: ApiGatewayFronting;
   readonly app: AgenticApp;
   readonly rag: RagKnowledgeBaseConstruct;
+  readonly benefitsQaRuntime?: AgentCoreRuntimeProvisioner;
 
   constructor(scope: Construct, id: string, props: WorkloadAppStackProps) {
     super(scope, id, props);
@@ -139,6 +151,27 @@ export class WorkloadAppStack extends Stack {
       envName: props.envName,
       costCentre: props.costCentre,
     });
+
+    // ---- Benefits Q&A Runtime (CDK-managed via AwsCustomResource) ----
+    // Provisioned only when an image URI is supplied (e.g. after a container
+    // build + push step). The runtime ID is emitted as a stack output so the
+    // platform team can reference it when adding the registry record.
+    if (props.benefitsQaImageUri) {
+      this.benefitsQaRuntime = new AgentCoreRuntimeProvisioner(this, 'BenefitsQaRuntime', {
+        runtimeConstruct: this.app.runtime,
+        containerImageUri: props.benefitsQaImageUri,
+        agentRuntimeName: `benefitsQa${props.envName}`,
+        description: 'PPO Benefits Q&A agent for member service representatives',
+        networkMode: 'PUBLIC',
+        environmentVariables: {
+          INFERENCE_PROFILE_ARN: this.app.inferenceProfile.attrInferenceProfileArn,
+          GUARDRAIL_IDENTIFIER: props.benefitsQaGuardrailId ?? '',
+          GUARDRAIL_VERSION: 'DRAFT',
+          PLAN_YEAR: '2026',
+          ENV_NAME: props.envName,
+        },
+      });
+    }
 
     // ---- RAG knowledge base (VPCE-only) ----
     this.rag = new RagKnowledgeBaseConstruct(this, 'RagKb', {
@@ -203,5 +236,11 @@ export class WorkloadAppStack extends Stack {
     new CfnOutput(this, 'UserPoolClientId', { value: this.identity.userPoolClient.userPoolClientId });
     new CfnOutput(this, 'InferenceProfileArn', { value: this.app.inferenceProfile.attrInferenceProfileArn });
     new CfnOutput(this, 'RagBucketName', { value: this.rag.sourceBucket.bucketName });
+    if (this.benefitsQaRuntime) {
+      new CfnOutput(this, 'BenefitsQaRuntimeId', {
+        value: this.benefitsQaRuntime.agentRuntimeId,
+        description: 'AgentCore Runtime ID for the benefits-qa agent — needed for the registry record.',
+      });
+    }
   }
 }
