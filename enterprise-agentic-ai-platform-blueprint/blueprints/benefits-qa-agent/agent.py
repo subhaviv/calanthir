@@ -23,10 +23,11 @@ SPDX-License-Identifier: MIT-0
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, Iterator
 
 import requests
 
@@ -160,6 +161,75 @@ class _GatewayLLMClient:
         data = resp.json()
         return data["content"][0]["text"]
 
+    def stream_invoke(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        guardrail_identifier: str = "",
+        guardrail_version: str = "DRAFT",
+    ) -> Iterator[str]:
+        system_prompt = ""
+        chat_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system_prompt = msg["content"]
+            else:
+                chat_messages.append({"role": msg["role"], "content": msg["content"]})
+
+        body: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": 4096,
+            "messages": chat_messages,
+            "stream": True,
+        }
+        if system_prompt:
+            body["system"] = system_prompt
+
+        headers: dict[str, str] = {
+            "Authorization": f"Bearer {self._token()}",
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+        }
+        try:
+            from bedrock_agentcore import BedrockAgentCoreContext  # type: ignore[import-not-found]
+            sid = BedrockAgentCoreContext.get_session_id()
+            if sid:
+                headers["baggage"] = f"session.id={sid}"
+        except Exception:
+            pass
+
+        with requests.post(
+            self._messages_url,
+            headers=headers,
+            json=body,
+            stream=True,
+            timeout=120,
+        ) as resp:
+            if not resp.ok:
+                body_text = resp.text
+                log.error("Gateway stream error %s: %s", resp.status_code, body_text)
+                resp.raise_for_status()
+            for raw_line in resp.iter_lines():
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
+                if not line.startswith("data:"):
+                    continue
+                payload = line[len("data:"):].strip()
+                if payload in ("", "[DONE]"):
+                    continue
+                try:
+                    event = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+                # Anthropic streaming: content_block_delta with delta.type == "text_delta"
+                if event.get("type") == "content_block_delta":
+                    delta = event.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        text = delta.get("text", "")
+                        if text:
+                            yield text
+
 
 # ── AgentCore Runtime HTTP contract ───────────────────────────────────────────
 
@@ -205,21 +275,38 @@ def _build_app() -> Any:
 
     app = BedrockAgentCoreApp()
 
+    import uuid as _uuid
+
     @app.entrypoint
-    def handle(payload: dict[str, Any], context: Any) -> dict[str, Any]:
+    async def handle(payload: dict[str, Any], context: Any):  # type: ignore[misc]
+        thread_id: str = payload.get("threadId", "")
+        run_id: str = payload.get("runId", str(_uuid.uuid4()))
         session_messages: list[dict[str, str]] = payload.get("messages", [])
         actor_id: str = payload.get("actorId", "msr-unknown")
         member_id: str = payload.get("memberId", "")
 
-        if not session_messages:
-            return {"response": "Hello, I'm the Benefits Q&A assistant. How can I help?"}
+        yield {"type": "RUN_STARTED", "threadId": thread_id, "runId": run_id}
 
-        response = _get_agent().reply(
+        if not session_messages:
+            msg_id = str(_uuid.uuid4())
+            yield {"type": "TEXT_MESSAGE_START", "messageId": msg_id, "role": "assistant"}
+            yield {"type": "TEXT_MESSAGE_CONTENT", "messageId": msg_id, "delta": "Hello, I'm the Benefits Q&A assistant. How can I help?"}
+            yield {"type": "TEXT_MESSAGE_END", "messageId": msg_id}
+            yield {"type": "RUN_FINISHED", "threadId": thread_id, "runId": run_id}
+            return
+
+        msg_id = str(_uuid.uuid4())
+        yield {"type": "TEXT_MESSAGE_START", "messageId": msg_id, "role": "assistant"}
+
+        for delta in _get_agent().stream_reply(
             session_messages,
             actor_id=actor_id,
             member_id=member_id,
-        )
-        return {"response": response}
+        ):
+            yield {"type": "TEXT_MESSAGE_CONTENT", "messageId": msg_id, "delta": delta}
+
+        yield {"type": "TEXT_MESSAGE_END", "messageId": msg_id}
+        yield {"type": "RUN_FINISHED", "threadId": thread_id, "runId": run_id}
 
     return app
 

@@ -1,7 +1,9 @@
 {
   "agenticai/platformAccountId": "195698601974",
   "agenticai/registrySynthAccountId": "195698601974",
-  "agenticai/workloadAccountIds": ["172873868821"],
+  "agenticai/workloadAccountIds": [
+    "172873868821"
+  ],
   "agenticai/workloadNonprodAccountId": "172873868821",
   "agenticai/envName": "nonprod",
   "agenticai/defaultRegion": "us-east-1",
@@ -12,13 +14,21 @@
   "agenticai/organizationId": "o-0000calplch",
   "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/Admin",
   "agenticai/platformNonprodAccountId": "195698601974",
+  "agenticai/benefitsQaA2aEndpointUrl": "https://eoku9zqkg4.execute-api.us-east-1.amazonaws.com",
+  "agenticai/benefitsQaRuntimeArn": "arn:aws:bedrock-agentcore:us-east-1:172873868821:runtime/benefitsQanonprod-JgzQGK5bcJ",
   "agenticai/pipelineSelection": "workload",
   "agenticai/githubRepo": "subhaviv/calanthir",
   "agenticai/githubBranch": "main",
   "agenticai/githubConnectionArn": "arn:aws:codestar-connections:us-east-1:195698601974:connection/5314da9b-91be-4f34-aefd-d62ed4b4046a",
   "agenticai/workloadProdAccountId": "172873868821",
-  "agenticai/workloadNonprodAvailabilityZones": ["us-east-1a", "us-east-1b"],
-  "agenticai/workloadProdAvailabilityZones": ["us-east-1a", "us-east-1b"],
+  "agenticai/workloadNonprodAvailabilityZones": [
+    "us-east-1a",
+    "us-east-1b"
+  ],
+  "agenticai/workloadProdAvailabilityZones": [
+    "us-east-1a",
+    "us-east-1b"
+  ],
   "agenticai/externalUserPoolId": "us-east-1_NoErXe1QA",
   "agenticai/externalUserPoolClientId": "3o0q6hdtfo1sphqq7jtqaspb3f",
   "agenticai/externalUserPoolRegion": "us-east-1",
@@ -73,5 +83,11 @@
       "requestsPerMinute": 1000,
       "tokensPerMinute": 5000000
     }
+  ],
+  "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v7",
+  "agenticai/workloadAccountId": "172873868821",
+  "agenticai/availabilityZones": [
+    "us-east-1a",
+    "us-east-1b"
   ]
 }

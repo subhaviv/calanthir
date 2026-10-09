@@ -604,6 +604,9 @@ export class PlatformInferenceGatewayConstruct extends Construct {
       protocolConfiguration: {
         mcp: {
           supportedVersions: [props.mcpVersion ?? DEFAULT_MCP_VERSION],
+          streamingConfiguration: {
+            enableResponseStreaming: true,
+          },
         },
       },
       // The interceptor evaluates the request body before the target is called.

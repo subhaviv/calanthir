@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Callable, Protocol
+from typing import Callable, Iterator, Protocol
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +48,14 @@ class LLMClient(Protocol):
         guardrail_version: str,
         stream: bool,
     ) -> str: ...
+
+    def stream_invoke(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        guardrail_identifier: str,
+        guardrail_version: str,
+    ) -> Iterator[str]: ...
 
 
 @dataclass(frozen=True)
@@ -124,6 +132,45 @@ class BenefitsQAAgent:
             )
 
         return response
+
+    def stream_reply(
+        self,
+        session_messages: list[dict[str, str]],
+        *,
+        actor_id: str,
+        member_id: str = "",
+    ) -> Iterator[str]:
+        """Yield text deltas, then flush a final full response for escalation check.
+
+        Yields each text delta from the gateway stream. After the stream closes,
+        checks the assembled response for escalation markers and yields the
+        escalation message instead if triggered.
+        """
+        if not actor_id:
+            raise ValueError("actor_id is required (spec §3.4.6)")
+
+        if len(session_messages) > self.config.max_turns_per_session * 2:
+            yield self._escalate(session_messages, reason="session_length_cap", member_id=member_id)
+            return
+
+        messages = [{"role": "system", "content": _build_system_prompt(self.config.plan_year)}] + list(session_messages)
+
+        chunks: list[str] = []
+        for delta in self.llm.stream_invoke(
+            messages,
+            guardrail_identifier=self.config.guardrail_identifier,
+            guardrail_version=self.config.guardrail_version,
+        ):
+            chunks.append(delta)
+            yield delta
+
+        full = "".join(chunks)
+        if _needs_escalation(full):
+            yield self._escalate(
+                session_messages + [{"role": "assistant", "content": full}],
+                reason="escalation_marker",
+                member_id=member_id,
+            )
 
     def _escalate(self, messages: list[dict[str, str]], reason: str, member_id: str) -> str:
         log.info("benefits_qa.escalate reason=%s", reason)
