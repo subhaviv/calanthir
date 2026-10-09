@@ -606,13 +606,17 @@ export class PlatformInferenceGatewayConstruct extends Construct {
           supportedVersions: [props.mcpVersion ?? DEFAULT_MCP_VERSION],
         },
       },
-      // The interceptor evaluates the request body before the target is called;
-      // headers (bearer tokens) are deliberately never passed to it.
+      // The interceptor evaluates the request body before the target is called.
+      // Headers are forwarded so the interceptor can read the W3C `baggage`
+      // header (session.id, stamped by the invoking runtime) and record it on
+      // the decision log — the join key that correlates a gateway guardrail
+      // decision back to the end user audited at the runtime. The interceptor
+      // still never logs bearer tokens or request text (see guardrail-interceptor).
       interceptorConfigurations: [
         {
           interceptor: { lambda: { arn: this.guardrailInterceptor.functionArn } },
           interceptionPoints: ['REQUEST'],
-          inputConfiguration: { passRequestHeaders: false },
+          inputConfiguration: { passRequestHeaders: true },
         },
       ],
       authorizerType: 'CUSTOM_JWT',

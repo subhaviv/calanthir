@@ -482,7 +482,7 @@ describe('Phase 9 — opt-in cross-account M2M secret', () => {
 });
 
 describe('Phase 9 — server-side guardrail enforcement (REQUEST interceptor)', () => {
-  it('attaches exactly one REQUEST interceptor to the Gateway and never passes headers', () => {
+  it('attaches exactly one REQUEST interceptor to the Gateway and forwards headers for session-id correlation', () => {
     const template = synth();
     const gateway = properties(
       onlyResource(template, 'AWS::BedrockAgentCore::Gateway'),
@@ -495,7 +495,7 @@ describe('Phase 9 — server-side guardrail enforcement (REQUEST interceptor)', 
           Lambda: { Arn: { 'Fn::GetAtt': [functionLogicalId, 'Arn'] } },
         },
         InterceptionPoints: ['REQUEST'],
-        InputConfiguration: { PassRequestHeaders: false },
+        InputConfiguration: { PassRequestHeaders: true },
       },
     ]);
     expect(gateway.PolicyEngineConfiguration).toBeUndefined();
