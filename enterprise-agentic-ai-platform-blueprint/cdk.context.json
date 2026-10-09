@@ -11,14 +11,67 @@
   "agenticai/costCentre": "platform",
   "agenticai/organizationId": "o-0000calplch",
   "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/Admin",
+  "agenticai/platformNonprodAccountId": "195698601974",
+  "agenticai/pipelineSelection": "workload",
+  "agenticai/githubRepo": "subhaviv/calanthir",
+  "agenticai/githubBranch": "main",
+  "agenticai/githubConnectionArn": "arn:aws:codestar-connections:us-east-1:195698601974:connection/5314da9b-91be-4f34-aefd-d62ed4b4046a",
+  "agenticai/workloadProdAccountId": "172873868821",
+  "agenticai/workloadNonprodAvailabilityZones": ["us-east-1a", "us-east-1b"],
+  "agenticai/workloadProdAvailabilityZones": ["us-east-1a", "us-east-1b"],
   "agenticai/externalUserPoolId": "us-east-1_NoErXe1QA",
   "agenticai/externalUserPoolClientId": "3o0q6hdtfo1sphqq7jtqaspb3f",
   "agenticai/externalUserPoolRegion": "us-east-1",
   "agenticai/inferenceModelRateLimits": [
     {
-      "qualifiedModelId": "anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "requestsPerMinute": 60,
-      "tokensPerMinute": 400000
+      "qualifiedModelId": "anthropic.claude-sonnet-5",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "anthropic.claude-haiku-4-5",
+      "requestsPerMinute": 2000,
+      "tokensPerMinute": 10000000
+    },
+    {
+      "qualifiedModelId": "anthropic.claude-opus-4-8",
+      "requestsPerMinute": 200,
+      "tokensPerMinute": 1000000
+    },
+    {
+      "qualifiedModelId": "anthropic.claude-opus-5-5",
+      "requestsPerMinute": 200,
+      "tokensPerMinute": 1000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-5.5",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-5.6-sol",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-5.6-luna",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-6-sol",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-6-luna",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
+    },
+    {
+      "qualifiedModelId": "openai.gpt-6-astra",
+      "requestsPerMinute": 1000,
+      "tokensPerMinute": 5000000
     }
   ]
 }

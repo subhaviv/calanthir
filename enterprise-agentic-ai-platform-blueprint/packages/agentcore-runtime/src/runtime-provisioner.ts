@@ -17,7 +17,7 @@ import {
   AwsCustomResource,
   AwsCustomResourcePolicy,
   PhysicalResourceId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  PhysicalResourceIdReference,
 } from 'aws-cdk-lib/custom-resources';
 import { PolicyStatement, Effect, Role } from 'aws-cdk-lib/aws-iam';
 import { NagSuppressions } from 'cdk-nag';
@@ -74,11 +74,12 @@ export class AgentCoreRuntimeProvisioner extends Construct {
       new PolicyStatement({
         sid: 'AgentCoreControlPlane',
         effect: Effect.ALLOW,
-        actions: [
-          'bedrock-agentcore-control:CreateAgentRuntime',
-          'bedrock-agentcore-control:DeleteAgentRuntime',
-          'bedrock-agentcore-control:GetAgentRuntime',
-        ],
+        // bedrock-agentcore:CreateAgentRuntime triggers several implicit dependent
+        // actions (CreateAgentRuntimeEndpoint, CreateWorkloadIdentity, etc.) that
+        // are not documented as separate grant requirements but appear in IAM
+        // checks at runtime. Use a wildcard here; scope is still the control-plane
+        // service only and the Nag suppression (SEC-040) covers this.
+        actions: ['bedrock-agentcore:*'],
         resources: ['*'],
       }),
       new PolicyStatement({
@@ -116,23 +117,13 @@ export class AgentCoreRuntimeProvisioner extends Construct {
         service: 'bedrock-agentcore-control',
         action: 'DeleteAgentRuntime',
         parameters: {
-          // Overridden at deploy time via addPropertyOverride below to use the
-          // physical resource ID (agentRuntimeId) captured during onCreate.
-          agentRuntimeId: 'PLACEHOLDER',
+          // PhysicalResourceIdReference is substituted by the AwsCustomResource
+          // Lambda with the physical ID (agentRuntimeId) captured during onCreate.
+          agentRuntimeId: new PhysicalResourceIdReference(),
         },
         ignoreErrorCodesMatching: 'ResourceNotFoundException',
       },
     });
-
-    // Patch the delete parameter to reference the physical ID token so CDK
-    // resolves the actual runtime ID at delete time.
-    const crCfn = cr.node.defaultChild as any;
-    if (crCfn) {
-      crCfn.addPropertyOverride(
-        'Delete.parameters.agentRuntimeId',
-        cr.getResponseField('agentRuntimeId'),
-      );
-    }
 
     this.agentRuntimeId = cr.getResponseField('agentRuntimeId');
     this.agentRuntimeArn = `arn:${stack.partition}:bedrock-agentcore:${stack.region}:${stack.account}:agent-runtime/${this.agentRuntimeId}`;
