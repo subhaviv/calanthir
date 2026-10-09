@@ -10,7 +10,7 @@
   "agenticai/agentId": "primary",
   "agenticai/costCentre": "platform",
   "agenticai/organizationId": "o-0000calplch",
-  "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/aifactory-calanthir-PlaceholderPipelineRole",
+  "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/Admin",
   "agenticai/inferenceModelRateLimits": [
     {
       "qualifiedModelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
