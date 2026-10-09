@@ -36,6 +36,7 @@
     "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true,
     "@aws-cdk/aws-route53-patterns:useCertificate": true,
     "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/core:defaultCrossStackReferences": "strong",
     "agenticai/bootstrapQualifier": "hnb659fds",
     "agenticai/regulated": true
   }
