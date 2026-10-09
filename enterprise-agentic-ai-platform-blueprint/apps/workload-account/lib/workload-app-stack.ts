@@ -157,6 +157,10 @@ export class WorkloadAppStack extends Stack {
     // build + push step). The runtime ID is emitted as a stack output so the
     // platform team can reference it when adding the registry record.
     if (props.benefitsQaImageUri) {
+      // The exec role already has write access to this.app.runtime.logGroup (granted in AgentCoreRuntimeConstruct).
+      // OTEL is configured to write to that same workload-account log group; OAM then surfaces it centrally.
+      const logGroupName = this.app.runtime.logGroup.logGroupName;
+
       this.benefitsQaRuntime = new AgentCoreRuntimeProvisioner(this, 'BenefitsQaRuntime', {
         runtimeConstruct: this.app.runtime,
         containerImageUri: props.benefitsQaImageUri,
@@ -169,6 +173,12 @@ export class WorkloadAppStack extends Stack {
           GUARDRAIL_VERSION: 'DRAFT',
           PLAN_YEAR: '2026',
           ENV_NAME: props.envName,
+          AGENT_OBSERVABILITY_ENABLED: 'true',
+          OTEL_PYTHON_DISTRO: 'aws_distro',
+          OTEL_PYTHON_CONFIGURATOR: 'aws_configurator',
+          OTEL_EXPORTER_OTLP_PROTOCOL: 'http/protobuf',
+          OTEL_EXPORTER_OTLP_LOGS_HEADERS: `x-aws-log-group=${logGroupName},x-aws-log-stream=benefits-qa,x-aws-metric-namespace=agenticai/runtimes`,
+          OTEL_RESOURCE_ATTRIBUTES: `service.name=benefits-qa-${props.envName}`,
         },
       });
     }

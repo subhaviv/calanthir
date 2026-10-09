@@ -84,7 +84,7 @@
       "tokensPerMinute": 5000000
     }
   ],
-  "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v7",
+  "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v8",
   "agenticai/workloadAccountId": "172873868821",
   "agenticai/availabilityZones": [
     "us-east-1a",
