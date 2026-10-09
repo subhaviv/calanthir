@@ -1,0 +1,21 @@
+{
+  "agenticai/platformAccountId": "195698601974",
+  "agenticai/registrySynthAccountId": "195698601974",
+  "agenticai/workloadAccountIds": ["172873868821"],
+  "agenticai/workloadNonprodAccountId": "172873868821",
+  "agenticai/envName": "nonprod",
+  "agenticai/defaultRegion": "us-east-1",
+  "agenticai/applicationId": "aifactory-calanthir",
+  "agenticai/tenantId": "calanthir",
+  "agenticai/agentId": "primary",
+  "agenticai/costCentre": "platform",
+  "agenticai/organizationId": "o-0000calplch",
+  "agenticai/pipelineRoleArn": "arn:aws:iam::195698601974:role/aifactory-calanthir-PlaceholderPipelineRole",
+  "agenticai/inferenceModelRateLimits": [
+    {
+      "qualifiedModelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+      "requestsPerMinute": 60,
+      "tokensPerMinute": 400000
+    }
+  ]
+}

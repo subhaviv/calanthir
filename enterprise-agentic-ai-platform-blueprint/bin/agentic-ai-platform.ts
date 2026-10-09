@@ -345,7 +345,7 @@ switch (stage) {
   case "management": {
     const attachToWorkloadsOu: boolean =
       app.node.tryGetContext("agenticai/attachScpsToWorkloadsOu") === true;
-    new OrgStack(app, "AgenticAI-Management-OrgStack", {
+    new OrgStack(app, "aifactory-calanthir-Management-OrgStack", {
       env: {
         account: process.env.CDK_DEFAULT_ACCOUNT,
         region: deploymentRegion(),
@@ -380,7 +380,7 @@ switch (stage) {
     }
 
     if (logArchiveAccount) {
-      new LogArchiveStack(app, "AgenticAI-Platform-LogArchiveStack", {
+      new LogArchiveStack(app, "aifactory-calanthir-Platform-LogArchiveStack", {
         env: { account: logArchiveAccount, region },
         organizationId: orgId,
         workloadAccountIds,
@@ -388,7 +388,7 @@ switch (stage) {
     }
 
     if (auditAccount) {
-      new AuditStack(app, "AgenticAI-Platform-AuditStack", {
+      new AuditStack(app, "aifactory-calanthir-Platform-AuditStack", {
         env: { account: auditAccount, region },
         organizationId: orgId,
       });
@@ -434,13 +434,13 @@ switch (stage) {
       }
       const guardrailStack = new GuardrailStack(
         app,
-        "AgenticAI-Platform-GuardrailStack",
+        "aifactory-calanthir-Platform-GuardrailStack",
         {
           env: { account: platformAccount, region },
           pipelineRoleArn,
         },
       );
-      new RegistryStack(app, "AgenticAI-Platform-RegistryStack", {
+      new RegistryStack(app, "aifactory-calanthir-Platform-RegistryStack", {
         env: { account: platformAccount, region },
         envName: platformEnvName,
         workloadAccountIds,
@@ -473,7 +473,7 @@ switch (stage) {
       });
       const inferenceGatewayStack = new InferenceGatewayStack(
         app,
-        "AgenticAI-Platform-InferenceGatewayStack",
+        "aifactory-calanthir-Platform-InferenceGatewayStack",
         {
           env: { account: platformAccount, region },
           envName: String(platformEnvName),
@@ -518,7 +518,7 @@ switch (stage) {
 
     const networkStack = new WorkloadNetworkStack(
       app,
-      "AgenticAI-Workload-NetworkStack",
+      "aifactory-calanthir-Workload-NetworkStack",
       {
         env: { account: workloadAccount, region },
         vpcCidr,
@@ -547,7 +547,7 @@ switch (stage) {
       );
       const appStack = new WorkloadAppStack(
         app,
-        "AgenticAI-Workload-AppStack",
+        "aifactory-calanthir-Workload-AppStack",
         {
           env: { account: workloadAccount, region },
           vpcId: networkStack.vpc.vpc.vpcId,
@@ -612,7 +612,7 @@ switch (stage) {
       : typeof rawAllocations === "string"
         ? (JSON.parse(rawAllocations) as unknown[])
         : undefined;
-    new D03PlatformCoreStack(app, "AgenticAI-D03-PlatformCoreStack", {
+    new D03PlatformCoreStack(app, "aifactory-calanthir-D03-PlatformCoreStack", {
       env: { account, region },
       workloadAccountIds,
       externalId,
@@ -670,7 +670,7 @@ switch (stage) {
         "d03-workload stage requires context 'agenticai/d03PlatformAccountId' and 'agenticai/d03ExternalId'.",
       );
     }
-    new D03WorkloadAgentStack(app, "AgenticAI-D03-WorkloadAgentStack", {
+    new D03WorkloadAgentStack(app, "aifactory-calanthir-D03-WorkloadAgentStack", {
       env: { account, region },
       platformAccountId,
       externalId,
@@ -765,7 +765,7 @@ switch (stage) {
 
     new D03WorkstreamGatewayStack(
       app,
-      `AgenticAI-D03-WorkstreamGateway-${tenantId}-${agentId}`,
+      `aifactory-calanthir-D03-WorkstreamGateway-${tenantId}-${agentId}`,
       {
         env: { account: workloadAccountId, region },
         tenantId,
@@ -1132,7 +1132,7 @@ switch (stage) {
     }
 
     if (includePlatform) {
-      new PlatformPipelineStack(app, "AgenticAI-PlatformPipelineStack", {
+      new PlatformPipelineStack(app, "aifactory-calanthir-PlatformPipelineStack", {
         env: { account: platformNonprodAccount, region },
         githubRepo: githubRepo as string,
         githubBranch:
@@ -1175,7 +1175,7 @@ switch (stage) {
     }
 
     if (includeWorkload) {
-      new WorkloadPipelineStack(app, "AgenticAI-WorkloadPipelineStack", {
+      new WorkloadPipelineStack(app, "aifactory-calanthir-WorkloadPipelineStack", {
         env: { account: platformNonprodAccount, region },
         githubRepo: githubRepo as string,
         githubBranch:
@@ -1254,7 +1254,7 @@ switch (stage) {
         "gap-closure stage requires context 'agenticai/approverRoleArn' to be a valid IAM role ARN.",
       );
     }
-    new GapClosureStack(app, "AgenticAI-GapClosureStack", {
+    new GapClosureStack(app, "aifactory-calanthir-GapClosureStack", {
       env: { account, region },
       envName,
       tenantId,
