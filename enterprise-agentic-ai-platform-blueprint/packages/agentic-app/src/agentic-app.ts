@@ -69,6 +69,13 @@ export class AgenticApp extends Construct {
 
     // ---- Application inference profile (R-TEN-013, R-TEN-029) ----
     const modelId = props.modelId ?? PLATFORM_ALLOWED_MODELS[0];
+    // Claude 4.x+ models require a cross-region system-defined inference
+    // profile as the copyFrom source — bare foundation-model ARNs return
+    // "does not support On Demand inference". The system profile ARN includes
+    // the account ID and uses the inference-profile resource type with the
+    // us.* prefix for US regions.
+    const regionPrefix = stack.region.startsWith('eu-') ? 'eu' : 'us';
+    const copyFromArn = `arn:aws:bedrock:${stack.region}:${stack.account}:inference-profile/${regionPrefix}.${modelId}`;
     this.inferenceProfile = new CfnApplicationInferenceProfile(this, 'InferenceProfile', {
       inferenceProfileName: `agenticai-${envName}-${tenantId}-${agentId}`,
       // Bedrock ApplicationInferenceProfile description regex:
@@ -76,7 +83,7 @@ export class AgenticApp extends Construct {
       // No slashes, commas, parens, asterisks. Keep safe ASCII + spaces/dashes.
       description: `Application inference profile for ${tenantId}-${agentId} in ${envName}`,
       modelSource: {
-        copyFrom: `arn:aws:bedrock:${stack.region}::foundation-model/${modelId}`,
+        copyFrom: copyFromArn,
       },
       tags: [
         { key: 'application-id', value: tenantId },
