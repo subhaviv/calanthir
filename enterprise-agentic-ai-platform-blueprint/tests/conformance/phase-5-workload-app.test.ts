@@ -38,7 +38,6 @@ function synthApp() {
     vpcCidr: net.vpc.vpc.vpcCidrBlock,
     availabilityZones: net.vpc.vpc.availabilityZones,
     bedrockRuntimeVpceId: net.vpc.endpoints.bedrockRuntime.vpcEndpointId,
-    vpceSecurityGroupId: net.vpc.vpceEniSg.securityGroupId,
     envName: 'nonprod',
     tenantId: 'demo',
     agentId: 'primary',
