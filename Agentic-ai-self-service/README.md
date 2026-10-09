@@ -1,8 +1,10 @@
-# AgentCore Visual Workflow Platform
+# Calanthir — Healthtech AI Agent Platform
+
+> Forked from [AgentCore Visual Workflow Platform](https://github.com/aws-samples/sample-ai-agent-factory). Calanthir is a domain-specific demo platform for Medtech, Healthtech, Payor, Provider, and Pharma AI agent use cases, built on AWS Bedrock AgentCore.
 
 [![CI](https://github.com/aws-samples/sample-agentcore-lowcode-nocode/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aws-samples/sample-agentcore-lowcode-nocode/actions/workflows/ci.yml)
 
-A visual workflow builder for **AWS Bedrock AgentCore** that lets you design, configure, and deploy AI agents through a drag-and-drop canvas interface. Inspired by n8n's node-based editor, built for AWS Bedrock AgentCore. Deployed to AWS with API Gateway, Lambda, Step Functions, DynamoDB, and CloudFront — fully serverless, pay-per-request.
+A visual workflow builder for **AWS Bedrock AgentCore** that lets you design, configure, and deploy AI agents through a drag-and-drop canvas interface — pre-loaded with healthcare-vertical templates for Payor, Provider, Pharma, and Medtech. Deployed to AWS with API Gateway, Lambda, Step Functions, DynamoDB, and CloudFront — fully serverless, pay-per-request.
 
 ![Visual canvas — a customer support agent wired to Gateway, Identity, Memory, and Observability](docs/images/canvas.png)
 

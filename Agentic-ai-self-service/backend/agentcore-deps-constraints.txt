@@ -110,6 +110,23 @@ mcp==1.30.0
 #    loudly if it has not.
 websockets==16.1.1
 
+# ── tenacity. Same shared-transitive pattern as websockets above, one package over.
+#    Nothing in the strands-mcp baseline caps tenacity, so a free resolve floated it to
+#    9.2.1 (released after this file was last built). But EVERY published google-genai
+#    (checked 1.67.0 through 2.29.0) requires tenacity>=8.2.3,<9.2.0, and google-genai is
+#    what strands-agents[gemini] installs -- so a 9.2.1 baseline made the provider-gemini
+#    delta unsatisfiable: pip returned ResolutionImpossible naming
+#    `The user requested (constraint) tenacity==9.2.1`. openai/anthropic do not use
+#    tenacity, which is why only gemini failed.
+#
+#    Fix is here, not in the delta, for the same reason as websockets: a shared
+#    distribution must resolve to ONE version across the baseline and all providers, so
+#    the baseline must sit inside the intersection of every provider's range. 9.1.4 is the
+#    highest release inside google-genai's cap. Verified by resolving the baseline, the
+#    gemini delta, and the openai+anthropic deltas separately against this pin: all rc=0,
+#    gemini -> google-genai 2.29.0. Raise this only after google-genai's cap moves.
+tenacity==9.1.4
+
 # ── OpenTelemetry. These own the span attribute names the cost ledger parses. The 0.x
 #    versioned packages track the 1.x ones (1.44.0 <-> 0.65b0) and must be bumped as a set,
 #    because opentelemetry-sdk pins its semantic-conventions peer narrowly.

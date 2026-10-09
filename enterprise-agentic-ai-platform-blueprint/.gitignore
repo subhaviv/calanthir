@@ -93,6 +93,7 @@ NOTES.md
 TODO.md
 NOTES/
 TODO/
+CLAUDE.md
 tests/live/
 
 # Site-specific scrubber deny-list. Holds the literal values a given

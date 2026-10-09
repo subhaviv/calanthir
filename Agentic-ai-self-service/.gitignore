@@ -106,6 +106,9 @@ backend/lib/
 # Kiro
 .kiro/
 
+# Local virtual envs
+.deployvenv/
+
 # Claude Code
 .claude/
 
