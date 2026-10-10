@@ -117,6 +117,9 @@ export interface WorkloadStageProps extends StageProps {
   readonly notificationEmail?: string;
   readonly benefitsQaImageUri?: string;
   readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
+  readonly inferenceM2mSecretArn?: string;
+  readonly inferenceGatewayUrl?: string;
+  readonly inferenceModelId?: string;
 }
 
 /** Platform inference inputs threaded into the generated-agent Runtime. */
@@ -217,6 +220,9 @@ export class WorkloadDeploymentStage extends Stage {
       notificationEmail: props.notificationEmail,
       benefitsQaImageUri: props.benefitsQaImageUri,
       benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
+      inferenceM2mSecretArn: props.inferenceM2mSecretArn,
+      inferenceGatewayUrl: props.inferenceGatewayUrl,
+      inferenceModelId: props.inferenceModelId,
     });
     this.appStack.addDependency(this.networkStack);
   }
@@ -435,6 +441,9 @@ export interface WorkloadPipelineStackProps extends StackProps {
   readonly notificationEmail?: string;
   readonly benefitsQaImageUri?: string;
   readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
+  readonly inferenceM2mSecretArn?: string;
+  readonly inferenceGatewayUrl?: string;
+  readonly inferenceModelId?: string;
 
   /**
    * Evaluation gate thresholds (R-DEVX-002).
@@ -887,6 +896,9 @@ export class WorkloadPipelineStack extends Stack {
       notificationEmail: props.notificationEmail,
       benefitsQaImageUri: props.benefitsQaImageUri,
       benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
+      inferenceM2mSecretArn: props.inferenceM2mSecretArn,
+      inferenceGatewayUrl: props.inferenceGatewayUrl,
+      inferenceModelId: props.inferenceModelId,
     });
     this.pipeline.addStage(nonprodStage);
 
@@ -1056,6 +1068,9 @@ export class WorkloadPipelineStack extends Stack {
       notificationEmail: props.notificationEmail,
       benefitsQaImageUri: props.benefitsQaImageUri,
       benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
+      inferenceM2mSecretArn: props.inferenceM2mSecretArn,
+      inferenceGatewayUrl: props.inferenceGatewayUrl,
+      inferenceModelId: props.inferenceModelId,
     });
 
     if (props.gaRegistry) {

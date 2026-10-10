@@ -88,6 +88,9 @@
     }
   ],
   "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v8",
+  "agenticai/inferenceM2mSecretArn": "arn:aws:secretsmanager:us-east-1:195698601974:secret:agenticai/inference-m2m/agenticai-inference-nonprod-TxAKso",
+  "agenticai/inferenceGatewayUrl": "https://agenticai-inference-nonprod-wainu7pcof.gateway.bedrock-agentcore.us-east-1.amazonaws.com",
+  "agenticai/inferenceModelId": "anthropic.claude-sonnet-5",
   "agenticai/workloadAccountId": "172873868821",
   "agenticai/availabilityZones": [
     "us-east-1a",

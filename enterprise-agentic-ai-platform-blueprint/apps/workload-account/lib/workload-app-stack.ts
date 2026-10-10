@@ -16,6 +16,7 @@
  */
 import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
@@ -97,6 +98,17 @@ export interface WorkloadAppStackProps extends StackProps {
    * Typically points at the loom-user-pool (cross-account).
    */
   readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
+  /**
+   * ARN of the cross-account Secrets Manager secret in the platform account
+   * holding the inference gateway M2M credentials (clientId, clientSecret,
+   * tokenEndpoint, scope, gatewayUrl). The execution role is granted
+   * GetSecretValue on this ARN cross-account.
+   */
+  readonly inferenceM2mSecretArn?: string;
+  /** Inference gateway base URL (without path). */
+  readonly inferenceGatewayUrl?: string;
+  /** Model ID to pass to the inference gateway (e.g. anthropic.claude-sonnet-5). */
+  readonly inferenceModelId?: string;
 }
 
 export class WorkloadAppStack extends Stack {
@@ -181,6 +193,10 @@ export class WorkloadAppStack extends Stack {
           GUARDRAIL_VERSION: 'DRAFT',
           PLAN_YEAR: '2026',
           ENV_NAME: props.envName,
+          // Inference gateway — container reads clientSecret from Secrets Manager at startup.
+          INFERENCE_GATEWAY_URL: props.inferenceGatewayUrl ?? '',
+          INFERENCE_MODEL_ID: props.inferenceModelId ?? 'anthropic.claude-sonnet-5',
+          INFERENCE_M2M_SECRET_ARN: props.inferenceM2mSecretArn ?? '',
           AGENT_OBSERVABILITY_ENABLED: 'true',
           OTEL_PYTHON_DISTRO: 'aws_distro',
           OTEL_PYTHON_CONFIGURATOR: 'aws_configurator',
@@ -189,6 +205,19 @@ export class WorkloadAppStack extends Stack {
           OTEL_RESOURCE_ATTRIBUTES: `service.name=benefits-qa-${props.envName}`,
         },
       });
+
+      // Grant the execution role cross-account read on the platform M2M secret.
+      if (props.inferenceM2mSecretArn) {
+        this.app.runtime.executionRole.addToPolicy(new PolicyStatement({
+          sid: 'ReadInferenceM2mSecret',
+          effect: Effect.ALLOW,
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [props.inferenceM2mSecretArn],
+        }));
+        // The secret's CMK is in the platform account — allow kms:Decrypt via
+        // the key's own resource policy (already grants workload account).
+        // No explicit grant needed here; the resource policy on the key suffices.
+      }
     }
 
     // ---- RAG knowledge base (VPCE-only) ----

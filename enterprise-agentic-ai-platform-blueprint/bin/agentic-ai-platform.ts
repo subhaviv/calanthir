@@ -895,6 +895,9 @@ switch (stage) {
     const pipelineExternalUserPoolId = app.node.tryGetContext("agenticai/externalUserPoolId");
     const pipelineExternalUserPoolClientId = app.node.tryGetContext("agenticai/externalUserPoolClientId");
     const pipelineExternalUserPoolRegion = app.node.tryGetContext("agenticai/externalUserPoolRegion");
+    const pipelineInferenceM2mSecretArn = app.node.tryGetContext("agenticai/inferenceM2mSecretArn");
+    const pipelineInferenceGatewayUrl = app.node.tryGetContext("agenticai/inferenceGatewayUrl");
+    const pipelineInferenceModelId = app.node.tryGetContext("agenticai/inferenceModelId");
     const enableGaRegistryConsumer =
       app.node.tryGetContext("agenticai/enableGaRegistryConsumer") === true ||
       app.node.tryGetContext("agenticai/enableGaRegistryConsumer") === "true";
@@ -1179,6 +1182,15 @@ switch (stage) {
     if (typeof pipelineExternalUserPoolRegion === "string") {
       sharedSynthContext["agenticai/externalUserPoolRegion"] = pipelineExternalUserPoolRegion;
     }
+    if (typeof pipelineInferenceM2mSecretArn === "string") {
+      sharedSynthContext["agenticai/inferenceM2mSecretArn"] = pipelineInferenceM2mSecretArn;
+    }
+    if (typeof pipelineInferenceGatewayUrl === "string") {
+      sharedSynthContext["agenticai/inferenceGatewayUrl"] = pipelineInferenceGatewayUrl;
+    }
+    if (typeof pipelineInferenceModelId === "string") {
+      sharedSynthContext["agenticai/inferenceModelId"] = pipelineInferenceModelId;
+    }
 
     if (includePlatform) {
       new PlatformPipelineStack(app, "aifactory-calanthir-PlatformPipelineStack", {
@@ -1264,6 +1276,18 @@ switch (stage) {
                 issuerUrl: `https://cognito-idp.${typeof pipelineExternalUserPoolRegion === "string" ? pipelineExternalUserPoolRegion : region}.amazonaws.com/${pipelineExternalUserPoolId}`,
                 allowedClients: [pipelineExternalUserPoolClientId],
               }
+            : undefined,
+        inferenceM2mSecretArn:
+          typeof pipelineInferenceM2mSecretArn === "string"
+            ? pipelineInferenceM2mSecretArn
+            : undefined,
+        inferenceGatewayUrl:
+          typeof pipelineInferenceGatewayUrl === "string"
+            ? pipelineInferenceGatewayUrl
+            : undefined,
+        inferenceModelId:
+          typeof pipelineInferenceModelId === "string"
+            ? pipelineInferenceModelId
             : undefined,
         synthContext: sharedSynthContext,
       });

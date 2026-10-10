@@ -42,6 +42,20 @@ def _require_env(name: str) -> str:
     return val
 
 
+def _load_m2m_secret() -> dict:
+    """Fetch the inference gateway M2M credentials from Secrets Manager.
+
+    The secret ARN is injected as INFERENCE_M2M_SECRET_ARN. Returns a dict
+    with clientId, clientSecret, tokenEndpoint, scope, gatewayUrl keys.
+    """
+    secret_arn = _require_env("INFERENCE_M2M_SECRET_ARN")
+    import boto3
+    import json as _json
+    client = boto3.client("secretsmanager", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    response = client.get_secret_value(SecretId=secret_arn)
+    return _json.loads(response["SecretString"])
+
+
 # ── M2M token cache ────────────────────────────────────────────────────────────
 
 class _TokenCache:
@@ -237,12 +251,13 @@ def _build_app() -> Any:
     from bedrock_agentcore import BedrockAgentCoreApp  # type: ignore[import-not-found]
     from benefits_qa_agent import BenefitsQAAgent, BenefitsQAConfig
 
-    gateway_url        = _require_env("INFERENCE_GATEWAY_URL")
-    model_id           = _require_env("INFERENCE_MODEL_ID")
-    token_endpoint     = _require_env("COGNITO_TOKEN_ENDPOINT")
-    client_id          = _require_env("COGNITO_CLIENT_ID")
-    client_secret      = _require_env("COGNITO_CLIENT_SECRET")
-    scope              = _require_env("COGNITO_SCOPE")
+    m2m = _load_m2m_secret()
+    gateway_url    = _require_env("INFERENCE_GATEWAY_URL") or m2m["gatewayUrl"]
+    model_id       = _require_env("INFERENCE_MODEL_ID")
+    token_endpoint = m2m["tokenEndpoint"]
+    client_id      = m2m["clientId"]
+    client_secret  = m2m["clientSecret"]
+    scope          = m2m["scope"]
     guardrail_identifier = _require_env("GUARDRAIL_IDENTIFIER")
     guardrail_version  = os.environ.get("GUARDRAIL_VERSION", "DRAFT").strip()
     plan_year          = os.environ.get("PLAN_YEAR", "2026").strip()
