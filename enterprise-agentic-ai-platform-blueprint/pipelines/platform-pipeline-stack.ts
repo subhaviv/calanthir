@@ -139,14 +139,20 @@ export class PlatformDeploymentStage extends Stage {
         trustedAccountIds: props.oamTrustedAccountIds,
       });
     }
+    // Explicit stackNames keep the pipeline-managed stacks aligned with the
+    // names deployed directly via `cdk deploy --context stage=platform` so
+    // the pipeline takes ownership rather than creating duplicates.
+    const stackPrefix = `aifactory-${props.tenantId}-Platform`;
     const guardrail = new GuardrailStack(this, "Guardrail", {
       env: props.env,
+      stackName: `${stackPrefix}-GuardrailStack`,
       pipelineRoleArn: props.pipelineRoleArn,
       existingAdminRoleArn: props.existingGuardrailAdminRoleArn,
       baselineGuardrailName: props.baselineGuardrailName,
     });
     new RegistryStack(this, "Registry", {
       env: props.env,
+      stackName: `${stackPrefix}-RegistryStack`,
       envName: props.envName,
       workloadAccountIds: props.workloadAccountIds,
       registrySynthAccountId: props.registrySynthAccountId,
@@ -164,6 +170,7 @@ export class PlatformDeploymentStage extends Stage {
       "InferenceGateway",
       {
         env: props.env,
+        stackName: `${stackPrefix}-InferenceGatewayStack`,
         envName: props.envName,
         applicationId: props.applicationId,
         agentId: props.agentId,

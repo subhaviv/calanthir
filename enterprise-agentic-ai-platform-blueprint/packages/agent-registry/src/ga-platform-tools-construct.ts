@@ -268,7 +268,7 @@ export class GaPlatformToolsConstruct extends Construct {
       const fn = new LambdaFunction(this, `Function-${tool.toolId}`, {
         functionName,
         description: tool.description,
-        runtime: Runtime.NODEJS_20_X,
+        runtime: Runtime.NODEJS_22_X,
         handler: "index.handler",
         code: Code.fromInline(TOOL_HANDLER),
         timeout: Duration.seconds(10),

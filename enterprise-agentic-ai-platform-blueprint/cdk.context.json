@@ -1,5 +1,9 @@
 {
   "agenticai/platformAccountId": "195698601974",
+  "agenticai/platformNonprodAccountId": "195698601974",
+  "agenticai/platformProdAccountId": "195698601974",
+  "agenticai/auditAccountId": "195698601974",
+  "agenticai/logArchiveAccountId": "195698601974",
   "agenticai/registrySynthAccountId": "195698601974",
   "agenticai/workloadAccountIds": [
     "172873868821"
