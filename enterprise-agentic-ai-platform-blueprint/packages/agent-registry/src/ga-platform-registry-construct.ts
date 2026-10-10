@@ -1,15 +1,14 @@
 /*
  * Native GA Agent Registry producer used by the pipeline-owned RegistryStack.
  *
- * This construct is deliberately additive during the blue-green migration. It
- * does not replace or rename the existing DynamoDB AgentCoreRegistryConstruct.
+ * Uses AwsCustomResource calling bedrock-agentcore-control so registries
+ * appear in the Bedrock AgentCore console (arn:aws:bedrock-agentcore:...).
  *
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: MIT-0
  */
 import {
   CfnOutput,
-  CfnResource,
   Duration,
   RemovalPolicy,
   Stack,
@@ -25,6 +24,12 @@ import {
   Role,
 } from "aws-cdk-lib/aws-iam";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import {
+  AwsCustomResource,
+  AwsCustomResourcePolicy,
+  PhysicalResourceId,
+  PhysicalResourceIdReference,
+} from "aws-cdk-lib/custom-resources";
 import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
@@ -130,16 +135,16 @@ export function buildGaToolGovernanceDocument(
 /**
  * Pipeline-owned GA Registry producer for one Platform environment.
  *
- * Resources use RetainExceptOnCreate semantics: a failed first deployment
- * cleans itself up, while a later stack rollback cannot destroy approved
- * governance state. The old DynamoDB registry remains the rollback path until
- * a live rollback deployment from the R2 revision passes independently.
+ * Creates the registry and records via bedrock-agentcore-control so they
+ * appear in the Bedrock AgentCore console. Physical resource IDs are the
+ * service-generated registryId / recordId values.
  */
 export class GaPlatformRegistryConstruct extends Construct {
-  readonly registry: CfnResource;
   readonly registryId: string;
   readonly registryArn: string;
-  readonly records: Readonly<Record<string, CfnResource>>;
+  readonly recordIds: Readonly<Record<string, string>>;
+  /** AwsCustomResource constructs keyed by toolId — use node.addDependency() for ordering. */
+  readonly recordConstructs: Readonly<Record<string, AwsCustomResource>>;
   readonly recordIdParameters: Readonly<Record<string, StringParameter>>;
   readonly readerRole: Role;
   readonly readerExternalId: string;
@@ -198,38 +203,78 @@ export class GaPlatformRegistryConstruct extends Construct {
     }
 
     const stack = Stack.of(this);
-    const tags = {
-      "application-id": props.tags.applicationId,
-      "agent-id": props.tags.agentId,
-      "tenant-id": props.tags.tenantId,
-      "cost-centre": props.tags.costCentre,
-      environment: props.tags.environment,
-    };
-    const cfnTags = Object.entries(tags)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([Key, Value]) => ({ Key, Value }));
     const tag = (resource: Construct): void => {
-      for (const [key, value] of Object.entries(tags)) {
+      for (const [key, value] of Object.entries({
+        "application-id": props.tags.applicationId,
+        "agent-id": props.tags.agentId,
+        "tenant-id": props.tags.tenantId,
+        "cost-centre": props.tags.costCentre,
+        environment: props.tags.environment,
+      })) {
         Tags.of(resource).add(key, value);
       }
     };
 
+    const crPolicy = AwsCustomResourcePolicy.fromStatements([
+      new PolicyStatement({
+        sid: "AgentCoreRegistry",
+        effect: Effect.ALLOW,
+        actions: ["bedrock-agentcore:*"],
+        resources: ["*"],
+      }),
+    ]);
+
+    const nagSuppress = (cr: AwsCustomResource, reason: string) => {
+      NagSuppressions.addResourceSuppressions(
+        cr,
+        [
+          { id: "AwsSolutions-IAM5", reason },
+          { id: "AwsSolutions-L1", reason: "SEC-006: CDK-managed custom-resource Lambda." },
+        ],
+        true,
+      );
+    };
+
+    // ── Registry ──────────────────────────────────────────────────────────────
     const registryName = `agenticai-platform-${props.envName}-v1`;
-    this.registry = new CfnResource(this, "Registry", {
-      type: "AWS::AgentRegistry::Registry",
-      properties: {
-        Name: registryName,
-        Description: `Platform-owned GA Agent Registry (${props.envName}).`,
-        AuthorizerType: "AWS_IAM",
-        ApprovalConfiguration: { AutoApprovalRules: ["APPROVE_ALL"] },
-        Tags: cfnTags,
+    const registryCr = new AwsCustomResource(this, "Registry", {
+      resourceType: "Custom::AgentCoreRegistry",
+      installLatestAwsSdk: false,
+      policy: crPolicy,
+      onCreate: {
+        service: "bedrock-agentcore-control",
+        action: "CreateRegistry",
+        parameters: {
+          name: registryName,
+          description: `Platform-owned GA Agent Registry (${props.envName}).`,
+          authorizerType: "AWS_IAM",
+        },
+        physicalResourceId: PhysicalResourceId.fromResponse("registryId"),
+      },
+      onUpdate: {
+        service: "bedrock-agentcore-control",
+        action: "UpdateRegistry",
+        parameters: {
+          registryId: new PhysicalResourceIdReference(),
+          description: `Platform-owned GA Agent Registry (${props.envName}).`,
+        },
+        physicalResourceId: PhysicalResourceId.fromResponse("registryId"),
+      },
+      onDelete: {
+        service: "bedrock-agentcore-control",
+        action: "DeleteRegistry",
+        parameters: { registryId: new PhysicalResourceIdReference() },
+        ignoreErrorCodesMatching: "ResourceNotFoundException",
       },
     });
-    this.registry.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
-    this.registryId = this.registry.getAtt("RegistryId").toString();
-    this.registryArn = this.registry.getAtt("RegistryArn").toString();
+    nagSuppress(registryCr, "SEC-041: bedrock-agentcore registry APIs have no resource ARN at synth time.");
 
-    const records: Record<string, CfnResource> = {};
+    this.registryId = registryCr.getResponseField("registryId");
+    this.registryArn = `arn:${stack.partition}:bedrock-agentcore:${stack.region}:${stack.account}:registry/${this.registryId}`;
+
+    // ── Records ───────────────────────────────────────────────────────────────
+    const recordIds: Record<string, string> = {};
+    const recordConstructs: Record<string, AwsCustomResource> = {};
     const recordIdParameters: Record<string, StringParameter> = {};
     this.parameterPrefix = `/agenticai/registry/v1/${props.envName}`;
 
@@ -263,36 +308,64 @@ export class GaPlatformRegistryConstruct extends Construct {
         generation === undefined
           ? `Record-${tool.toolId}`
           : `Record-${tool.toolId}-generation-${generation}`;
-      const record = new CfnResource(this, recordConstructId, {
-        type: "AWS::AgentRegistry::RegistryRecord",
-        properties: {
-          RegistryId: this.registryId,
-          Name: tool.toolId,
-          DisplayName: tool.toolId,
-          Description: tool.description,
-          RecordType: "CUSTOM",
-          RecordVersion: "2.0.0",
-          Descriptors: {
-            Custom: {
-              Data: JSON.stringify(governance),
-            },
+
+      const recordCr = new AwsCustomResource(this, recordConstructId, {
+        resourceType: "Custom::AgentCoreRegistryRecord",
+        installLatestAwsSdk: false,
+        policy: crPolicy,
+        onCreate: {
+          service: "bedrock-agentcore-control",
+          action: "CreateRegistryRecord",
+          parameters: {
+            registryId: this.registryId,
+            name: tool.toolId,
+            description: tool.description,
+            descriptorType: "CUSTOM",
+            descriptors: { custom: { inlineContent: JSON.stringify(governance) } },
+            recordVersion: "2.0.0",
           },
-          Tags: cfnTags,
+          physicalResourceId: PhysicalResourceId.fromResponse("recordArn"),
+        },
+        onUpdate: {
+          service: "bedrock-agentcore-control",
+          action: "UpdateRegistryRecord",
+          parameters: {
+            registryId: this.registryId,
+            recordId: new PhysicalResourceIdReference(),
+            description: tool.description,
+            descriptorType: "CUSTOM",
+            descriptors: { custom: { inlineContent: JSON.stringify(governance) } },
+            recordVersion: "2.0.0",
+          },
+          physicalResourceId: PhysicalResourceId.fromResponse("recordArn"),
+        },
+        onDelete: {
+          service: "bedrock-agentcore-control",
+          action: "DeleteRegistryRecord",
+          parameters: {
+            registryId: this.registryId,
+            recordId: new PhysicalResourceIdReference(),
+          },
+          ignoreErrorCodesMatching: "ResourceNotFoundException",
         },
       });
-      record.addDependency(this.registry);
-      record.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
-      records[tool.toolId] = record;
+      recordCr.node.addDependency(registryCr);
+      nagSuppress(recordCr, "SEC-042: bedrock-agentcore registry record APIs have no resource ARN at synth time.");
+
+      recordConstructs[tool.toolId] = recordCr;
+      recordIds[tool.toolId] = recordCr.getResponseField("recordArn");
       recordIdParameters[tool.toolId] = parameter(
         `RecordIdParameter-${tool.toolId}`,
         `records/${tool.toolId}/id`,
-        record.getAtt("RecordId").toString(),
-        `GA Agent Registry record id for ${tool.toolId}.`,
+        recordCr.getResponseField("recordArn"),
+        `GA Agent Registry record ARN for ${tool.toolId}.`,
       );
     }
-    this.records = records;
+    this.recordIds = recordIds;
+    this.recordConstructs = recordConstructs;
     this.recordIdParameters = recordIdParameters;
 
+    // ── Reader role ───────────────────────────────────────────────────────────
     this.readerExternalId = `agenticai-registry-v1-${props.envName}-${stack.account}`;
     const workloadPrincipals = workloadAccountIds.map(
       (accountId) => new AccountPrincipal(accountId),
@@ -358,37 +431,17 @@ export class GaPlatformRegistryConstruct extends Construct {
       description: `Read-only access to the ${props.envName} GA Agent Registry.`,
       statements: [
         new PolicyStatement({
-          sid: "ReadRegistryMetadata",
+          sid: "ReadRegistry",
           effect: Effect.ALLOW,
           actions: [
-            "agent-registry:GetRegistry",
-            "agent-registry:ListRegistryRecords",
+            "bedrock-agentcore:GetRegistry",
+            "bedrock-agentcore:ListRegistryRecords",
+            "bedrock-agentcore:GetRegistryRecord",
           ],
-          resources: [this.registryArn],
-        }),
-        new PolicyStatement({
-          sid: "ReadRegistryRecords",
-          effect: Effect.ALLOW,
-          actions: [
-            "agent-registry:GetRegistryRecord",
-            "agent-registry:GetDiscoverableRegistryRecord",
+          resources: [
+            this.registryArn,
+            `${this.registryArn}/record/*`,
           ],
-          resources: [`${this.registryArn}/record/*`],
-        }),
-        new PolicyStatement({
-          sid: "ReadRegistryTags",
-          effect: Effect.ALLOW,
-          actions: ["agent-registry:ListTagsForResource"],
-          resources: [this.registryArn, `${this.registryArn}/record/*`],
-        }),
-        new PolicyStatement({
-          sid: "DiscoverApprovedRegistryRecords",
-          effect: Effect.ALLOW,
-          actions: [
-            "agent-registry:ListDiscoverableRegistryRecords",
-            "agent-registry:SearchDiscoverableRegistryRecords",
-          ],
-          resources: [this.registryArn],
         }),
         new PolicyStatement({
           sid: "ReadRegistryDiscoveryParameters",
@@ -407,12 +460,13 @@ export class GaPlatformRegistryConstruct extends Construct {
         {
           id: "AwsSolutions-IAM5",
           reason:
-            "SEC-030: RegistryRecord IDs are service-generated and SSM discovery uses a versioned environment prefix; both wildcards are constrained under one Registry ARN or one exact parameter path, and conformance tests pin every action/resource pair.",
+            "SEC-030: Record ARNs are service-generated; wildcard is constrained under one Registry ARN.",
         },
       ],
       true,
     );
 
+    // ── SSM parameters ────────────────────────────────────────────────────────
     const registryIdParameter = parameter(
       "RegistryIdParameter",
       "id",
@@ -438,6 +492,7 @@ export class GaPlatformRegistryConstruct extends Construct {
       `GA Agent Registry reader ExternalId for ${props.envName}.`,
     );
 
+    // ── Outputs ───────────────────────────────────────────────────────────────
     new CfnOutput(this, "RegistryId", { value: this.registryId });
     new CfnOutput(this, "RegistryArn", { value: this.registryArn });
     new CfnOutput(this, "RegistryReaderRoleArn", {

@@ -87,10 +87,8 @@ export class RegistryStack extends Stack {
         environment: props.envName,
       },
     });
-    for (const [toolId, record] of Object.entries(this.gaRegistry.records)) {
-      record.addDependsOn(
-        this.gaTools.aliases[toolId].node.defaultChild as CfnResource,
-      );
+    for (const [toolId, recordCr] of Object.entries(this.gaRegistry.recordConstructs)) {
+      recordCr.node.addDependency(this.gaTools.aliases[toolId]);
     }
 
     // ── Benefits Q&A agent record ──────────────────────────────────────────
@@ -159,7 +157,7 @@ export class RegistryStack extends Stack {
           ],
         },
       });
-      benefitsQaRecord.addDependsOn(this.gaRegistry.registry);
+      benefitsQaRecord.node.addDependency(this.gaRegistry.node.findChild("Registry"));
       benefitsQaRecord.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
 
       new CfnOutput(this, "BenefitsQaRecordId", {
