@@ -109,7 +109,7 @@ export class AgentCoreRuntimeProvisioner extends Construct {
     const authorizerConfig = props.jwtAuthorizer
       ? {
           customJWTAuthorizer: {
-            discoveryUrl: props.jwtAuthorizer.issuerUrl,
+            discoveryUrl: `${props.jwtAuthorizer.issuerUrl}/.well-known/openid-configuration`,
             allowedClients: props.jwtAuthorizer.allowedClients,
           },
         }
