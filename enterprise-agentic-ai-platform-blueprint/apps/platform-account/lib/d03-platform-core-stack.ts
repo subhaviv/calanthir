@@ -814,7 +814,7 @@ export class D03PlatformCoreStack extends Stack {
     //
     // Handlers are inline because these are pure-demo Lambdas whose
     // behaviour is deterministic (echo / ping). Using `Code.fromInline` +
-    // `Runtime.NODEJS_20_X` keeps the toolchain free of esbuild (the repo
+    // `Runtime.NODEJS_22_X` keeps the toolchain free of esbuild (the repo
     // does not pull `@aws-cdk/aws-lambda-nodejs` esbuild bundling deps).
     // The inlined Cedar gate is kept verbatim-equivalent to the
     // `@agenticai/tool-cedar-wrapper` evaluator (regex grammar, three
