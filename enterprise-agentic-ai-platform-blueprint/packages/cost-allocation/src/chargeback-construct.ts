@@ -186,7 +186,7 @@ export class ChargebackConstruct extends Construct {
 
     this.runner = new LambdaFn(this, 'Runner', {
       functionName: `agenticai-chargeback-${props.envName}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(15),
       memorySize: 512,

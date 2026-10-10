@@ -202,7 +202,7 @@ export class KillSwitchConstruct extends Construct {
     // the current target config and re-puts it with status DISABLED.
     const disableTargetFn = new LambdaFunction(this, 'DisableGatewayTargetFn', {
       functionName: `agenticai-killswitch-disable-target-${props.envName}-${props.tenantId}-${props.agentId}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(2),
       memorySize: 256,

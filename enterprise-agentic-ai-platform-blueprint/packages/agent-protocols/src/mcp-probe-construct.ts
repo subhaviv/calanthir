@@ -119,7 +119,7 @@ export class McpProbeConstruct extends Construct {
 
     this.probe = new LambdaFn(this, 'Probe', {
       functionName: `agenticai-mcp-probe-${props.envName}-${props.tenantId}-${props.agentId}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(1),
       memorySize: 256,

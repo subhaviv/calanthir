@@ -108,7 +108,7 @@ export class InferenceCircuitBreakerConstruct extends Construct {
 
     this.fn = new LambdaFunction(this, 'Fn', {
       functionName: `agenticai-inference-cb-${props.envName}-${props.tenantId}-${props.agentId}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(2),
       memorySize: 512,

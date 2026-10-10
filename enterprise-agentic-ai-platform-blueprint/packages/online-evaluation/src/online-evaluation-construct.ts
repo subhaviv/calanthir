@@ -166,7 +166,7 @@ export class OnlineEvaluationConstruct extends Construct {
 
     this.watchdog = new LambdaFn(this, 'Watchdog', {
       functionName: `agenticai-online-eval-${props.envName}-${props.tenantId}-${props.agentId}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(5),
       memorySize: 512,

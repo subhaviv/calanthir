@@ -83,7 +83,7 @@ export class CatalogueDriftDetectorConstruct extends Construct {
 
     this.fn = new LambdaFunction(this, 'Fn', {
       functionName: `agenticai-catalogue-drift-${props.envName}-${props.tenantId}-${props.agentId}`,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.minutes(5),
       memorySize: 256,
