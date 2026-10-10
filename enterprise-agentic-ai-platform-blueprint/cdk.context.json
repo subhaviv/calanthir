@@ -87,7 +87,7 @@
       "tokensPerMinute": 5000000
     }
   ],
-  "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v8",
+  "agenticai/benefitsQaImageUri": "172873868821.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-calanthir-primary:benefits-qa-v9",
   "agenticai/inferenceM2mSecretArn": "arn:aws:secretsmanager:us-east-1:195698601974:secret:agenticai/inference-m2m/agenticai-inference-nonprod-TxAKso",
   "agenticai/inferenceGatewayUrl": "https://agenticai-inference-nonprod-wainu7pcof.gateway.bedrock-agentcore.us-east-1.amazonaws.com",
   "agenticai/inferenceModelId": "anthropic.claude-sonnet-5",
