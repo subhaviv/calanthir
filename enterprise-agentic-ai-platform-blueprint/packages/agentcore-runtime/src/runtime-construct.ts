@@ -86,12 +86,21 @@ export class AgentCoreRuntimeConstruct extends Construct {
         resources: [this.logGroup.logGroupArn, `${this.logGroup.logGroupArn}:*`],
       }),
     );
+    // ecr:GetAuthorizationToken is account-level (no resource ARN); the
+    // remaining ECR actions are scoped to this repo only.
+    this.executionRole.addToPolicy(
+      new PolicyStatement({
+        sid: 'EcrGetAuthToken',
+        effect: Effect.ALLOW,
+        actions: ['ecr:GetAuthorizationToken'],
+        resources: ['*'],
+      }),
+    );
     this.executionRole.addToPolicy(
       new PolicyStatement({
         sid: 'EcrImagePull',
         effect: Effect.ALLOW,
         actions: [
-          'ecr:GetAuthorizationToken',
           'ecr:BatchGetImage',
           'ecr:GetDownloadUrlForLayer',
           'ecr:BatchCheckLayerAvailability',
