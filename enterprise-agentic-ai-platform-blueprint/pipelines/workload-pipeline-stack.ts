@@ -57,6 +57,7 @@ import { Construct } from "constructs";
 
 import { WorkloadNetworkStack } from "../apps/workload-account/lib/workload-network-stack";
 import { WorkloadAppStack } from "../apps/workload-account/lib/workload-app-stack";
+import type { AgentCoreRuntimeJwtAuthorizerProps } from "@agenticai/agentcore-runtime";
 import {
   D03WorkstreamGatewayStack,
   type GatewayPolicyEngineMode,
@@ -114,6 +115,8 @@ export interface WorkloadStageProps extends StageProps {
   readonly evaluationInvokerPrincipalArn?: string;
   readonly auditOamSinkArn?: string;
   readonly notificationEmail?: string;
+  readonly benefitsQaImageUri?: string;
+  readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
 }
 
 /** Platform inference inputs threaded into the generated-agent Runtime. */
@@ -212,6 +215,8 @@ export class WorkloadDeploymentStage extends Stage {
       costCentre: props.costCentre,
       auditOamSinkArn: props.auditOamSinkArn,
       notificationEmail: props.notificationEmail,
+      benefitsQaImageUri: props.benefitsQaImageUri,
+      benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
     });
     this.appStack.addDependency(this.networkStack);
   }
@@ -428,6 +433,8 @@ export interface WorkloadPipelineStackProps extends StackProps {
   readonly workloadProdAvailabilityZones: readonly string[];
   readonly auditOamSinkArn?: string;
   readonly notificationEmail?: string;
+  readonly benefitsQaImageUri?: string;
+  readonly benefitsQaJwtAuthorizer?: AgentCoreRuntimeJwtAuthorizerProps;
 
   /**
    * Evaluation gate thresholds (R-DEVX-002).
@@ -878,6 +885,8 @@ export class WorkloadPipelineStack extends Stack {
         : undefined,
       auditOamSinkArn: props.auditOamSinkArn,
       notificationEmail: props.notificationEmail,
+      benefitsQaImageUri: props.benefitsQaImageUri,
+      benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
     });
     this.pipeline.addStage(nonprodStage);
 
@@ -1045,6 +1054,8 @@ export class WorkloadPipelineStack extends Stack {
       generatedAgentInference: props.generatedAgentInference?.prod,
       auditOamSinkArn: props.auditOamSinkArn,
       notificationEmail: props.notificationEmail,
+      benefitsQaImageUri: props.benefitsQaImageUri,
+      benefitsQaJwtAuthorizer: props.benefitsQaJwtAuthorizer,
     });
 
     if (props.gaRegistry) {

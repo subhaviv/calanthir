@@ -891,6 +891,10 @@ switch (stage) {
     const notificationEmail = app.node.tryGetContext(
       "agenticai/notificationEmail",
     );
+    const pipelineBenefitsQaImageUri = app.node.tryGetContext("agenticai/benefitsQaImageUri");
+    const pipelineExternalUserPoolId = app.node.tryGetContext("agenticai/externalUserPoolId");
+    const pipelineExternalUserPoolClientId = app.node.tryGetContext("agenticai/externalUserPoolClientId");
+    const pipelineExternalUserPoolRegion = app.node.tryGetContext("agenticai/externalUserPoolRegion");
     const enableGaRegistryConsumer =
       app.node.tryGetContext("agenticai/enableGaRegistryConsumer") === true ||
       app.node.tryGetContext("agenticai/enableGaRegistryConsumer") === "true";
@@ -1163,6 +1167,18 @@ switch (stage) {
     if (typeof notificationEmail === "string") {
       sharedSynthContext["agenticai/notificationEmail"] = notificationEmail;
     }
+    if (typeof pipelineBenefitsQaImageUri === "string") {
+      sharedSynthContext["agenticai/benefitsQaImageUri"] = pipelineBenefitsQaImageUri;
+    }
+    if (typeof pipelineExternalUserPoolId === "string") {
+      sharedSynthContext["agenticai/externalUserPoolId"] = pipelineExternalUserPoolId;
+    }
+    if (typeof pipelineExternalUserPoolClientId === "string") {
+      sharedSynthContext["agenticai/externalUserPoolClientId"] = pipelineExternalUserPoolClientId;
+    }
+    if (typeof pipelineExternalUserPoolRegion === "string") {
+      sharedSynthContext["agenticai/externalUserPoolRegion"] = pipelineExternalUserPoolRegion;
+    }
 
     if (includePlatform) {
       new PlatformPipelineStack(app, "aifactory-calanthir-PlatformPipelineStack", {
@@ -1237,6 +1253,18 @@ switch (stage) {
         enablePipelineRuntimeMemory,
         agentImageVariant,
         generatedAgentInference,
+        benefitsQaImageUri:
+          typeof pipelineBenefitsQaImageUri === "string"
+            ? pipelineBenefitsQaImageUri
+            : undefined,
+        benefitsQaJwtAuthorizer:
+          typeof pipelineExternalUserPoolId === "string" &&
+          typeof pipelineExternalUserPoolClientId === "string"
+            ? {
+                issuerUrl: `https://cognito-idp.${typeof pipelineExternalUserPoolRegion === "string" ? pipelineExternalUserPoolRegion : region}.amazonaws.com/${pipelineExternalUserPoolId}`,
+                allowedClients: [pipelineExternalUserPoolClientId],
+              }
+            : undefined,
         synthContext: sharedSynthContext,
       });
     }
