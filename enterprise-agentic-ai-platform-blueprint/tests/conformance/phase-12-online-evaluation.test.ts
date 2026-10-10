@@ -52,7 +52,7 @@ describe('Phase 12 — OnlineEvaluationConstruct CFN shape', () => {
     const t = synth();
     t.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'agenticai-online-eval-nonprod-demo-primary',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs22.x',
       Environment: {
         Variables: Match.objectLike({
           JUDGE_MODEL_CORRECTNESS: Match.stringLikeRegexp('claude-sonnet-4-5'),

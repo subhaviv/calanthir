@@ -47,7 +47,7 @@ describe('Phase 21 — Z7-A: InferenceCircuitBreakerConstruct', () => {
     const t = synth();
     t.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'agenticai-inference-cb-prod-demo-primary',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs22.x',
     });
   });
   it('emits a composite alarm + 3 child alarms wired to SNS', () => {
@@ -234,7 +234,7 @@ describe('Phase 21 — G-5d: CatalogueDriftDetectorConstruct', () => {
     const t = synth();
     t.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'agenticai-catalogue-drift-prod-demo-primary',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs22.x',
     });
   });
   it('emits the daily EventBridge schedule', () => {

@@ -959,7 +959,7 @@ exports.handler = async (event, context) => {
       const inlineHandler = CEDAR_GATE_PROLOGUE + spec.innerBody;
       const fn = new LambdaFunction(this, `ToolFn-${spec.id}`, {
         functionName: spec.functionName,
-        runtime: Runtime.NODEJS_20_X,
+        runtime: Runtime.NODEJS_22_X,
         handler: 'index.handler',
         code: Code.fromInline(inlineHandler),
         environment: {
@@ -1025,7 +1025,7 @@ exports.handler = async (event, context) => {
       NagSuppressions.addResourceSuppressions(
         fn,
         [
-          { id: 'AwsSolutions-L1', reason: 'SEC-006: Pinned to NODEJS_20_X; upgraded on next platform refresh.' },
+          { id: 'AwsSolutions-L1', reason: 'SEC-006: Pinned to NODEJS_22_X; upgraded on next platform refresh.' },
           { id: 'NIST.800.53.R5-LambdaConcurrency', reason: 'SEC-007: Demo tool Lambda; reserved concurrency would throttle legit gateway traffic.' },
           { id: 'NIST.800.53.R5-LambdaDLQ', reason: 'SEC-008: Demo tool; AgentCore Gateway surfaces invoke failures to the caller.' },
           { id: 'NIST.800.53.R5-LambdaInsideVPC', reason: 'SEC-009: Demo tool Lambda has no external network dependencies; VPC attach would add cold-start latency for no security gain.' },

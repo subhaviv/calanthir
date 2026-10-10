@@ -39,7 +39,7 @@ describe('Phase 15 — McpProbeConstruct CFN shape', () => {
     const t = synth();
     t.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'agenticai-mcp-probe-prod-demo-primary',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs22.x',
       Environment: {
         Variables: Match.objectLike({
           MCP_PROTOCOL_HEADER: 'MCP-Protocol-Version',

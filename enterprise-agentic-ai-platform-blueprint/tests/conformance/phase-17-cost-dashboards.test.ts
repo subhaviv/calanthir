@@ -82,7 +82,7 @@ describe('Phase 17 — ChargebackConstruct CFN shape', () => {
     const t = synth();
     t.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'agenticai-chargeback-prod',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs22.x',
       Environment: {
         Variables: Match.objectLike({
           CUR_DB: 'cur',

@@ -329,7 +329,7 @@ export class GaPlatformToolsConstruct extends Construct {
           {
             id: "AwsSolutions-L1",
             reason:
-              "SEC-006: NODEJS_20_X is the latest runtime supported by this pinned CDK version.",
+              "SEC-006: NODEJS_22_X is the latest runtime supported by this pinned CDK version.",
           },
           {
             id: "NIST.800.53.R5-LambdaConcurrency",
