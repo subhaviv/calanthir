@@ -252,6 +252,39 @@ if ! npx tsc --noEmit 2>&1; then
 fi
 echo "TypeScript OK."
 
+# ── Grant platform synth CodeBuild role cross-account lookup permissions ───────
+# CDK synth needs sts:AssumeRole on the workload CDK bootstrap lookup role.
+# synthCodeBuildDefaults.rolePolicy in code only takes effect after a self-mutate,
+# which requires synth to pass first. This inline policy bridges the gap.
+echo "Granting synth CodeBuild role permission to assume CDK lookup roles in ${WORKLOAD_ACCOUNT}..."
+SYNTH_ROLE_NAME=$(AWS_PROFILE=agentops-publisher aws iam list-roles \
+  --query "Roles[?starts_with(RoleName, 'aifactory-calanthir-Platf-PlatformPipelineBuildSynt')].RoleName" \
+  --output text 2>/dev/null)
+if [[ -z "$SYNTH_ROLE_NAME" || "$SYNTH_ROLE_NAME" == "None" ]]; then
+  echo "Warning: platform synth CodeBuild role not found — skipping IAM grant." >&2
+  echo "  Re-run this step after the pipeline deploys once." >&2
+else
+  echo "  Found synth role: $SYNTH_ROLE_NAME"
+  AWS_PROFILE=agentops-publisher aws iam put-role-policy \
+    --role-name "$SYNTH_ROLE_NAME" \
+    --policy-name "AgenticAI-LobLookup-${TENANT}" \
+    --policy-document "{
+  \"Version\": \"2012-10-17\",
+  \"Statement\": [{
+    \"Sid\": \"CdkCrossAccountLookup$(echo "$TENANT" | tr -d '-')\",
+    \"Effect\": \"Allow\",
+    \"Action\": [\"sts:AssumeRole\", \"sts:TagSession\"],
+    \"Resource\": [
+      \"arn:aws:iam::${WORKLOAD_ACCOUNT}:role/cdk-hnb659fds-lookup-role-${WORKLOAD_ACCOUNT}-${REGION}\",
+      \"arn:aws:iam::${WORKLOAD_ACCOUNT}:role/cdk-hnb659fds-file-publishing-role-${WORKLOAD_ACCOUNT}-${REGION}\",
+      \"arn:aws:iam::${WORKLOAD_ACCOUNT}:role/cdk-hnb659fds-image-publishing-role-${WORKLOAD_ACCOUNT}-${REGION}\",
+      \"arn:aws:iam::${WORKLOAD_ACCOUNT}:role/cdk-hnb659fds-deploy-role-${WORKLOAD_ACCOUNT}-${REGION}\"
+    ]
+  }]
+}"
+  echo "  IAM inline policy 'AgenticAI-LobLookup-${TENANT}' attached."
+fi
+
 # ── Commit ────────────────────────────────────────────────────────────────────
 git -C "$REPO_ROOT" add "$ENTRYPOINT"
 git -C "$REPO_ROOT" commit -m "feat(lob): onboard ${TENANT}
