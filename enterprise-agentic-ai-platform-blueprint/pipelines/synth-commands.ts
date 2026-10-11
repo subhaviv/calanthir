@@ -56,8 +56,11 @@ export interface StageAwareSynthOptions {
   readonly preSynthCommands?: readonly string[];
   /** CDK context key -> validated shell variable produced by preSynthCommands. */
   readonly contextFromEnvironment?: Readonly<Record<string, string>>;
-  /** Cloud Assembly artifact ID of the pipeline's own stack. */
-  readonly expectedStackArtifactId: string;
+  /**
+   * Cloud Assembly artifact ID of a stack that must exist in cdk.out.
+   * Optional — omit for S3-sourced LOB blueprints that are standalone CDK apps.
+   */
+  readonly expectedStackArtifactId?: string;
   /**
    * Globs relative to the blueprint package that must each resolve to a nested
    * stage assembly containing at least one CloudFormation stack.
@@ -127,7 +130,9 @@ export function stageAwareSynthCommands(
     ...(options.preSynthCommands ?? []),
     `npx cdk synth --context stage=${shellQuote(options.stage)} ${allContextArgs} --strict`,
     "test -f cdk.out/manifest.json",
-    `test -f cdk.out/${shellQuote(options.expectedStackArtifactId)}.template.json`,
+    ...(options.expectedStackArtifactId
+      ? [`test -f cdk.out/${shellQuote(options.expectedStackArtifactId)}.template.json`]
+      : []),
     'grep -q "aws:cloudformation:stack" cdk.out/manifest.json',
     validateStageAssembliesCommand(options.expectedStageAssemblyGlobs),
     publishCloudAssemblyFromCheckoutRootCommand(),

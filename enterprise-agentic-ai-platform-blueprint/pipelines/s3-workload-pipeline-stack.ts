@@ -347,7 +347,8 @@ export class S3WorkloadPipelineStack extends Stack {
     const baseSynthOptions = {
       stage: props.synthStage ?? "pipeline",
       context: this.synthContext(props),
-      expectedStackArtifactId: this.stackName,
+      // expectedStackArtifactId omitted: LOB blueprints are standalone CDK apps
+      // that do not synthesize the platform pipeline stack.
       expectedStageAssemblyGlobs: props.gaRegistry
         ? [
             "cdk.out/assembly-*RegistryRoles",
