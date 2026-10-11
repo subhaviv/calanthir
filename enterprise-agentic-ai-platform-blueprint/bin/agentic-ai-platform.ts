@@ -40,6 +40,7 @@ import { WorkloadNetworkStack } from "../apps/workload-account/lib/workload-netw
 import { WorkloadAppStack } from "../apps/workload-account/lib/workload-app-stack";
 import { PlatformPipelineStack } from "../pipelines/platform-pipeline-stack";
 import { WorkloadPipelineStack } from "../pipelines/workload-pipeline-stack";
+import { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";
 import type { GeneratedAgentInferenceInputs } from "../pipelines/workload-pipeline-stack";
 import { D03PlatformCoreStack } from "../apps/platform-account/lib/d03-platform-core-stack";
 import { parseGaRegistryConsumerContext } from "@agenticai/agent-registry";

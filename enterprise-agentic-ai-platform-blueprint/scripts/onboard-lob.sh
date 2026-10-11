@@ -213,20 +213,39 @@ TSBLOCK
 )
 
 # ── Ensure required imports are present ───────────────────────────────────────
-# Add S3 imports if not already there
-if ! grep -q "BucketEncryption" "$ENTRYPOINT"; then
-  sed -i '' 's|import { S3WorkloadPipelineStack }|import { Bucket, BucketEncryption, BlockPublicAccess } from "aws-cdk-lib/aws-s3";\nimport { ArnPrincipal } from "aws-cdk-lib/aws-iam";\nimport { RemovalPolicy } from "aws-cdk-lib";\nimport { S3WorkloadPipelineStack }|' "$ENTRYPOINT"
-fi
+python3 - "$ENTRYPOINT" <<'PYEOF_IMPORTS'
+import sys, re
 
-if ! grep -q "S3WorkloadPipelineStack" "$ENTRYPOINT"; then
-  sed -i '' 's|import { WorkloadPipelineStack }|import { WorkloadPipelineStack } from "../pipelines/workload-pipeline-stack";\nimport { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";|' "$ENTRYPOINT"
-  # Remove the duplicate import of WorkloadPipelineStack that sed just duplicated
-  # (only add S3 import; keep original WorkloadPipelineStack import untouched)
-  sed -i '' '/import { WorkloadPipelineStack } from "..\/pipelines\/workload-pipeline-stack";/{
-    N
-    /import { S3WorkloadPipelineStack }/!{P;D}
-  }' "$ENTRYPOINT"
-fi
+path = sys.argv[1]
+with open(path) as f:
+    src = f.read()
+
+changed = False
+
+if 'BucketEncryption' not in src:
+    src = src.replace(
+        'import { S3WorkloadPipelineStack }',
+        'import { Bucket, BucketEncryption, BlockPublicAccess } from "aws-cdk-lib/aws-s3";\n'
+        'import { ArnPrincipal } from "aws-cdk-lib/aws-iam";\n'
+        'import { RemovalPolicy } from "aws-cdk-lib";\n'
+        'import { S3WorkloadPipelineStack }'
+    )
+    changed = True
+
+if 'S3WorkloadPipelineStack' not in src:
+    src = src.replace(
+        'import { WorkloadPipelineStack }',
+        'import { WorkloadPipelineStack }\nimport { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";'
+    )
+    changed = True
+
+if changed:
+    with open(path, 'w') as f:
+        f.write(src)
+    print("Imports updated.")
+else:
+    print("Imports already present.")
+PYEOF_IMPORTS
 
 # ── Inject blocks before `app.synth()` ────────────────────────────────────────
 # We append into the `pipeline` case block, just before its closing `break;`
