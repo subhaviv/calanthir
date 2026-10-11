@@ -146,47 +146,16 @@ if grep -q "agenticai-pipeline-source-${TENANT}" "$ENTRYPOINT"; then
   exit 1
 fi
 
-# ── Inject: S3 source bucket (Step B2) ────────────────────────────────────────
-# Appended just before the final app.synth() call.
-BUCKET_BLOCK=$(cat <<TSBLOCK
+# ── Inject: S3WorkloadPipelineStack (Step B2+B3) ─────────────────────────────
+# The stack creates its own source bucket internally (agenticai-pipeline-source-<tenant>).
+# ciRunnerRoleArn is optional — omit now, add later via --ci-runner-role.
+BUCKET_BLOCK=""
 
-  // ── LOB: ${TENANT} — source bucket (Step B2) ─────────────────────────────
-  // Added by onboard-lob.sh. The LOB CI job uploads workload-source.zip here
-  // on every merge to main; CodePipeline triggers off the new S3 object version.
-  const lobSourceBucket_${TENANT//-/_} = new Bucket(app, "LobSourceBucket-${TENANT}", {
-    bucketName: "${BUCKET_NAME}",
-    versioned: true,
-    encryption: BucketEncryption.S3_MANAGED,
-    blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-    removalPolicy: RemovalPolicy.RETAIN,
-  });
-$(if [[ -n "$CI_RUNNER_ROLE" ]]; then cat <<GRANT
-  lobSourceBucket_${TENANT//-/_}.addToResourcePolicy(new PolicyStatement({
-    principals: [new ArnPrincipal("${CI_RUNNER_ROLE}")],
-    actions: ["s3:PutObject", "s3:GetBucketVersioning"],
-    resources: [
-      lobSourceBucket_${TENANT//-/_}.bucketArn,
-      \`\${lobSourceBucket_${TENANT//-/_}.bucketArn}/*\`,
-    ],
-  }));
-GRANT
-else cat <<NOGRANT
-  // TODO: add CI runner IAM grant once the LOB provides their role ARN:
-  // lobSourceBucket_${TENANT//-/_}.addToResourcePolicy(new PolicyStatement({
-  //   principals: [new ArnPrincipal("arn:aws:iam::${WORKLOAD_ACCOUNT}:role/YOUR_CI_RUNNER_ROLE")],
-  //   actions: ["s3:PutObject", "s3:GetBucketVersioning"],
-  //   resources: [lobSourceBucket_${TENANT//-/_}.bucketArn, \`\${lobSourceBucket_${TENANT//-/_}.bucketArn}/*\`],
-  // }));
-NOGRANT
-fi)
-TSBLOCK
-)
-
-# ── Inject: S3WorkloadPipelineStack (Step B3) ──────────────────────────────────
 PIPELINE_BLOCK=$(cat <<TSBLOCK
 
-  // ── LOB: ${TENANT} — workload pipeline (Step B3) ─────────────────────────
-  // Added by onboard-lob.sh. Bootstrap once (run as platform account ${PLATFORM_ACCOUNT}):
+  // ── LOB: ${TENANT} — workload pipeline ───────────────────────────────────
+  // Added by onboard-lob.sh. S3 source bucket created inside the stack.
+  // Bootstrap once (run as platform account ${PLATFORM_ACCOUNT}):
   //   npx cdk deploy \\
   //     "aifactory-${TENANT}-S3WorkloadPipelineStack" \\
   //     --context stage=pipeline --context agenticai/pipelineSelection=workload \\
@@ -194,8 +163,8 @@ PIPELINE_BLOCK=$(cat <<TSBLOCK
   // After bootstrap, all workload changes trigger via S3 upload from the LOB CI job.
   new S3WorkloadPipelineStack(app, "aifactory-${TENANT}-S3WorkloadPipelineStack", {
     env: { account: "${PLATFORM_ACCOUNT}", region: deploymentRegion() },
-    sourceBucket: lobSourceBucket_${TENANT//-/_},
     sourceObjectKey: "workload-source.zip",
+$(if [[ -n "$CI_RUNNER_ROLE" ]]; then echo "    ciRunnerRoleArn: \"${CI_RUNNER_ROLE}\","; fi)
     tenantId: "${TENANT}",
     agentId: "${AGENT_ID}",
     applicationId: "${APPLICATION_ID}",
@@ -221,16 +190,6 @@ with open(path) as f:
     src = f.read()
 
 changed = False
-
-if 'BucketEncryption' not in src:
-    src = src.replace(
-        'import { S3WorkloadPipelineStack }',
-        'import { Bucket, BucketEncryption, BlockPublicAccess } from "aws-cdk-lib/aws-s3";\n'
-        'import { ArnPrincipal } from "aws-cdk-lib/aws-iam";\n'
-        'import { RemovalPolicy } from "aws-cdk-lib";\n'
-        'import { S3WorkloadPipelineStack }'
-    )
-    changed = True
 
 if 'S3WorkloadPipelineStack' not in src:
     src = src.replace(

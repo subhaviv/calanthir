@@ -26,6 +26,7 @@
  */
 import {
   Duration,
+  RemovalPolicy,
   Stack,
   StackProps,
 } from "aws-cdk-lib";
@@ -35,8 +36,8 @@ import {
   LinuxArmBuildImage,
   LinuxBuildImage,
 } from "aws-cdk-lib/aws-codebuild";
-import { IBucket } from "aws-cdk-lib/aws-s3";
-import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { Bucket, BucketEncryption, BlockPublicAccess, IBucket } from "aws-cdk-lib/aws-s3";
+import { ArnPrincipal, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import {
   CodeBuildStep,
   CodePipeline,
@@ -143,14 +144,21 @@ function evaluationInvokerRoleName(tenantId: string, agentId: string): string {
 export interface S3WorkloadPipelineStackProps extends StackProps {
   /**
    * S3 bucket holding the versioned source zip. Must have versioning enabled.
-   * The LOB CI job uploads a new object version on every trunk merge.
+   * When omitted the stack creates a bucket named
+   * `agenticai-pipeline-source-<tenantId>` automatically.
    */
-  readonly sourceBucket: IBucket;
+  readonly sourceBucket?: IBucket;
   /**
    * S3 object key of the source zip within the bucket.
    * Example: "workload-source.zip"
    */
   readonly sourceObjectKey: string;
+  /**
+   * IAM role ARN of the LOB CI runner that uploads the source zip.
+   * When provided, an s3:PutObject grant is added to the source bucket.
+   * Can be omitted now and the stack updated later once the role exists.
+   */
+  readonly ciRunnerRoleArn?: string;
 
   readonly tenantId: string;
   readonly agentId: string;
@@ -311,10 +319,27 @@ export class S3WorkloadPipelineStack extends Stack {
       resourceTags,
     );
 
-    // S3 source — triggered by a new object version in the bucket.
-    // The LOB CI job uploads a fresh zip on every trunk merge.
+    // S3 source bucket — created here if not passed in externally.
+    const sourceBucket: IBucket = props.sourceBucket ?? (() => {
+      const bucket = new Bucket(this, "SourceBucket", {
+        bucketName: `agenticai-pipeline-source-${props.tenantId}`,
+        versioned: true,
+        encryption: BucketEncryption.S3_MANAGED,
+        blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+        removalPolicy: RemovalPolicy.RETAIN,
+      });
+      if (props.ciRunnerRoleArn) {
+        bucket.addToResourcePolicy(new PolicyStatement({
+          principals: [new ArnPrincipal(props.ciRunnerRoleArn)],
+          actions: ["s3:PutObject", "s3:GetBucketVersioning"],
+          resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
+        }));
+      }
+      return bucket;
+    })();
+
     const source = CodePipelineSource.s3(
-      props.sourceBucket,
+      sourceBucket,
       props.sourceObjectKey,
     );
 

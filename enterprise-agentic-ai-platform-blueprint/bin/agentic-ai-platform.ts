@@ -40,9 +40,6 @@ import { WorkloadNetworkStack } from "../apps/workload-account/lib/workload-netw
 import { WorkloadAppStack } from "../apps/workload-account/lib/workload-app-stack";
 import { PlatformPipelineStack } from "../pipelines/platform-pipeline-stack";
 import { WorkloadPipelineStack } from "../pipelines/workload-pipeline-stack";
-import { Bucket, BucketEncryption, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
-import { ArnPrincipal } from "aws-cdk-lib/aws-iam";
-import { RemovalPolicy } from "aws-cdk-lib";
 import { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";
 import type { GeneratedAgentInferenceInputs } from "../pipelines/workload-pipeline-stack";
 import { D03PlatformCoreStack } from "../apps/platform-account/lib/d03-platform-core-stack";
@@ -1297,22 +1294,6 @@ switch (stage) {
       });
     }
 
-  // ── LOB: payors — source bucket (Step B2) ─────────────────────────────
-  // Added by onboard-lob.sh. The LOB CI job uploads workload-source.zip here
-  // on every merge to main; CodePipeline triggers off the new S3 object version.
-  const lobSourceBucket_payors = new Bucket(app, "LobSourceBucket-payors", {
-    bucketName: "agenticai-pipeline-source-payors",
-    versioned: true,
-    encryption: BucketEncryption.S3_MANAGED,
-    blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-    removalPolicy: RemovalPolicy.RETAIN,
-  });
-  // TODO: add CI runner IAM grant once the LOB provides their role ARN:
-  // lobSourceBucket_payors.addToResourcePolicy(new PolicyStatement({
-  //   principals: [new ArnPrincipal("arn:aws:iam::172873868821:role/YOUR_CI_RUNNER_ROLE")],
-  //   actions: ["s3:PutObject", "s3:GetBucketVersioning"],
-  //   resources: [lobSourceBucket_payors.bucketArn, `${lobSourceBucket_payors.bucketArn}/*`],
-  // }));
   // ── LOB: payors — workload pipeline (Step B3) ─────────────────────────
   // Added by onboard-lob.sh. Bootstrap once (run as platform account 195698601974):
   //   npx cdk deploy \
@@ -1322,7 +1303,6 @@ switch (stage) {
   // After bootstrap, all workload changes trigger via S3 upload from the LOB CI job.
   new S3WorkloadPipelineStack(app, "aifactory-payors-S3WorkloadPipelineStack", {
     env: { account: "195698601974", region: deploymentRegion() },
-    sourceBucket: lobSourceBucket_payors,
     sourceObjectKey: "workload-source.zip",
     tenantId: "payors",
     agentId: "primary",
