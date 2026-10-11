@@ -247,11 +247,11 @@ else:
     print("Imports already present.")
 PYEOF_IMPORTS
 
-# ── Inject blocks before `app.synth()` ────────────────────────────────────────
-# We append into the `pipeline` case block, just before its closing `break;`
-# The marker we look for is the last `break;` before `app.synth()`.
+# ── Inject blocks inside the `pipeline` case, after the last stack instantiation
+# Anchor: the last occurrence of `synthContext: sharedSynthContext,` followed by
+# `\n    });\n  }\n  break;` — unique to the end of the pipeline case block.
 python3 - "$ENTRYPOINT" "$BUCKET_BLOCK" "$PIPELINE_BLOCK" <<'PYEOF'
-import sys, re
+import sys
 
 path = sys.argv[1]
 bucket_block = sys.argv[2]
@@ -260,19 +260,22 @@ pipeline_block = sys.argv[3]
 with open(path) as f:
     src = f.read()
 
-# Find the pipeline case `break;` — last one before `app.synth()`
-# We insert both blocks just before it.
-marker = "\n  break;\n}\n"  # closing of the pipeline switch case
-insert_at = src.rfind(marker)
-if insert_at == -1:
-    # fallback: insert before app.synth()
-    marker = "\napp.synth();"
-    insert_at = src.rfind(marker)
-    if insert_at == -1:
-        print("ERROR: could not find insertion point in entrypoint", file=sys.stderr)
-        sys.exit(1)
+# Find `    break;\n` that closes the `pipeline` case.
+# The pipeline case is the only one that contains `sharedSynthContext` — use
+# its last occurrence to locate the right break.
+synth_ctx_pos = src.rfind("synthContext: sharedSynthContext,")
+if synth_ctx_pos == -1:
+    print("ERROR: could not find 'synthContext: sharedSynthContext,' in entrypoint", file=sys.stderr)
+    sys.exit(1)
 
-new_src = src[:insert_at] + bucket_block + pipeline_block + src[insert_at:]
+# Find the next `    break;` after that position
+break_marker = "\n    break;"
+insert_at = src.find(break_marker, synth_ctx_pos)
+if insert_at == -1:
+    print("ERROR: could not find closing break after sharedSynthContext", file=sys.stderr)
+    sys.exit(1)
+
+new_src = src[:insert_at] + "\n" + bucket_block + pipeline_block + src[insert_at:]
 with open(path, "w") as f:
     f.write(new_src)
 
