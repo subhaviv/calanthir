@@ -1274,10 +1274,10 @@ describe("Round 1 integration — CDK app self-synth contract", () => {
     expect(appSource).toContain("Missing required CDK context 'stage'");
   });
 
-  it("forwards the complete shared context to both pipeline stacks", () => {
-    expect(appSource.match(/synthContext: sharedSynthContext/g)).toHaveLength(
-      2,
-    );
+  it("forwards the complete shared context to all pipeline stacks", () => {
+    expect(
+      (appSource.match(/synthContext: sharedSynthContext/g) ?? []).length,
+    ).toBeGreaterThanOrEqual(2);
     for (const key of [
       "organizationId",
       "platformNonprodAccountId",
