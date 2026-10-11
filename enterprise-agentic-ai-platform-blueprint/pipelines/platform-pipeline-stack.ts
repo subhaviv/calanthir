@@ -10,7 +10,7 @@
  */
 import { Stack, StackProps, Environment, Stage, StageProps } from "aws-cdk-lib";
 import { PipelineType } from "aws-cdk-lib/aws-codepipeline";
-import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import {
   CodePipeline,
   CodePipelineSource,
@@ -232,6 +232,18 @@ export class PlatformPipelineStack extends Stack {
       { connectionArn: props.githubConnectionArn },
     );
 
+    // Allow the synth CodeBuild role to assume CDK lookup roles in all workload accounts.
+    // Required when the platform pipeline synthesizes stacks targeting workload accounts
+    // (e.g. S3WorkloadPipelineStack stages) — CDK does AZ/context lookups cross-account.
+    const workloadLookupRoleArns = [...new Set(props.workloadAccountIds)].flatMap(
+      (accountId) => [
+        `arn:${this.partition}:iam::${accountId}:role/cdk-hnb659fds-lookup-role-${accountId}-${this.region}`,
+        `arn:${this.partition}:iam::${accountId}:role/cdk-hnb659fds-file-publishing-role-${accountId}-${this.region}`,
+        `arn:${this.partition}:iam::${accountId}:role/cdk-hnb659fds-image-publishing-role-${accountId}-${this.region}`,
+        `arn:${this.partition}:iam::${accountId}:role/cdk-hnb659fds-deploy-role-${accountId}-${this.region}`,
+      ],
+    );
+
     this.pipeline = new CodePipeline(this, "PlatformPipeline", {
       artifactBucket,
       role: pipelineServiceRole,
@@ -250,6 +262,14 @@ export class PlatformPipelineStack extends Stack {
           ],
         }),
       }),
+      synthCodeBuildDefaults: {
+        rolePolicy: [
+          new PolicyStatement({
+            actions: ["sts:AssumeRole", "sts:TagSession"],
+            resources: workloadLookupRoleArns,
+          }),
+        ],
+      },
       publishAssetsInParallel: false,
     });
 

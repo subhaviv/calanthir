@@ -51,6 +51,20 @@ The platform team hands you:
 
 ## Part 1 — First Agent
 
+### Step 0 — Bootstrap Your Workload Account (one-time)
+
+Before anything else, your workload account must trust the platform account's CDK pipeline roles. Run this once from credentials in **your workload account**:
+
+```bash
+npx cdk bootstrap aws://YOUR_WORKLOAD_ACCOUNT_ID/us-east-1 \
+  --trust 195698601974 \
+  --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+Replace `YOUR_WORKLOAD_ACCOUNT_ID` with your AWS account ID (provided by the platform team). This takes ~30 seconds and only needs to be done once per account.
+
+---
+
 ### Step 1 — Clone the Workload Blueprint Repo
 
 The platform team maintains a ready-to-use workload blueprint at:

@@ -327,6 +327,7 @@ export class S3WorkloadPipelineStack extends Stack {
         encryption: BucketEncryption.S3_MANAGED,
         blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
         removalPolicy: RemovalPolicy.RETAIN,
+        enforceSSL: true,
       });
       if (props.ciRunnerRoleArn) {
         bucket.addToResourcePolicy(new PolicyStatement({
