@@ -39,6 +39,19 @@ export interface RegistryStackProps extends StackProps {
    * Omit until the workload stack has been deployed and the endpoint is known.
    */
   readonly benefitsQaA2aEndpointUrl?: string;
+
+  /**
+   * HTTPS endpoint of the workload API Gateway fronting the Halo
+   * (providers / patient-journey) Runtime. When supplied a RegistryRecord is
+   * created in the GA registry so the agent becomes discoverable (auto-approves
+   * in nonprod; a curator approves in prod).
+   *
+   * The runtime ARN is passed via the context key
+   * `agenticai/haloPatientJourneyRuntimeArn`.
+   *
+   * Omit until the Halo workload stack is deployed and the endpoint is known.
+   */
+  readonly haloPatientJourneyA2aEndpointUrl?: string;
 }
 
 export class RegistryStack extends Stack {
@@ -165,6 +178,84 @@ export class RegistryStack extends Stack {
       new CfnOutput(this, "BenefitsQaRecordId", {
         value: benefitsQaRecord.getAtt("RecordId").toString(),
         description: "GA Registry record ID for the benefits-qa agent.",
+      });
+    }
+
+    // ── Halo: Patient Journey agent record ─────────────────────────────────
+    // Providers tenant, patient-journey agent (runtime np_providers_patient_journey).
+    // RecordType AGENT so it shows as an agent, not a tool. Auto-approves in
+    // nonprod (APPROVE_ALL); a curator approves in prod. Pass:
+    //   agenticai/haloPatientJourneyA2aEndpointUrl — workload API Gateway URL
+    //   agenticai/haloPatientJourneyRuntimeArn     — AgentCore Runtime ARN
+    if (props.haloPatientJourneyA2aEndpointUrl) {
+      const haloRuntimeArn =
+        typeof this.node.tryGetContext("agenticai/haloPatientJourneyRuntimeArn") === "string"
+          ? String(this.node.tryGetContext("agenticai/haloPatientJourneyRuntimeArn"))
+          : `arn:aws:bedrock-agentcore:${this.region}:${props.workloadAccountIds[0]}:agent-runtime/np_providers_patient_journey-pending`;
+
+      const haloDescription =
+        "Halo: Patient Journey — turns an ambient ED summary into a governed, " +
+        "auditable, cost-attributed patient-journey brief, calling governed EHR " +
+        "and imaging tools with per-call entitlement, audit, and cost attribution.";
+
+      // A2A agent card — dataSchemaVersion "0.3" (live-verified GA value).
+      const haloA2aCard = {
+        protocolVersion: "0.3",
+        name: "halo-patient-journey",
+        description: haloDescription.slice(0, 100),
+        version: "1.0",
+        url: props.haloPatientJourneyA2aEndpointUrl,
+        capabilities: { streaming: true },
+        skills: [
+          {
+            id: "ed-patient-journey",
+            name: "ED Patient-Journey Synthesis",
+            description:
+              "Assemble the structured EHR + imaging record the ambient scribe missed " +
+              "into a context-first patient-journey brief with source attribution.",
+            tags: ["clinical", "providers", "patient-journey", "ehr", "imaging"],
+          },
+        ],
+        defaultInputModes: ["text"],
+        defaultOutputModes: ["text"],
+      };
+
+      const haloRecord = new CfnResource(this, "HaloPatientJourneyAgentRecord", {
+        type: "AWS::AgentRegistry::RegistryRecord",
+        properties: {
+          RegistryId: this.gaRegistry.registryId,
+          Name: "halo-patient-journey",
+          DisplayName: "Halo: Patient Journey",
+          Description: haloDescription,
+          RecordType: "AGENT",
+          RecordVersion: "1.0.0",
+          Descriptors: {
+            A2aAgentCard: {
+              Data: JSON.stringify(haloA2aCard),
+              DataSchemaVersion: "0.3",
+            },
+          },
+          Tags: [
+            { Key: "application-id", Value: props.applicationId },
+            { Key: "agent-id", Value: "patient-journey" },
+            { Key: "tenant-id", Value: "providers" },
+            { Key: "cost-centre", Value: "providers" },
+            { Key: "environment", Value: props.envName },
+            { Key: "owner-team", Value: "providers" },
+          ],
+        },
+      });
+      haloRecord.addDependsOn(this.gaRegistry.registry);
+      haloRecord.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
+
+      // Avoid an unused-variable error while keeping the ARN explicit in the
+      // record's provenance (it is carried in the A2A url + tags today; the
+      // ARN is reserved for a future direct-invoke descriptor).
+      void haloRuntimeArn;
+
+      new CfnOutput(this, "HaloPatientJourneyRecordId", {
+        value: haloRecord.getAtt("RecordId").toString(),
+        description: "GA Registry record ID for the Halo: Patient Journey agent.",
       });
     }
   }

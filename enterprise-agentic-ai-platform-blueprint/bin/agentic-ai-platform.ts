@@ -476,6 +476,10 @@ switch (stage) {
           typeof app.node.tryGetContext("agenticai/benefitsQaA2aEndpointUrl") === "string"
             ? String(app.node.tryGetContext("agenticai/benefitsQaA2aEndpointUrl"))
             : undefined,
+        haloPatientJourneyA2aEndpointUrl:
+          typeof app.node.tryGetContext("agenticai/haloPatientJourneyA2aEndpointUrl") === "string"
+            ? String(app.node.tryGetContext("agenticai/haloPatientJourneyA2aEndpointUrl"))
+            : undefined,
       });
       const inferenceGatewayStack = new InferenceGatewayStack(
         app,
