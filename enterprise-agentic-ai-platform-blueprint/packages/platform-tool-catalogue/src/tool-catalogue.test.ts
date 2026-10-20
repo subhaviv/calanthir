@@ -444,3 +444,56 @@ describe('composeAgentCorePolicyDefinitions', () => {
     expect(left).toMatch(/^[A-Za-z][A-Za-z0-9_]+$/);
   });
 });
+
+describe('mcp-server tool type (hosted external MCP servers)', () => {
+  const pubmed = PLATFORM_TOOL_CATALOGUE['tool-pubmed'];
+
+  it('registers the hosted HCLS/PubMed servers as mcp-server tools', () => {
+    for (const id of [
+      'tool-pubmed',
+      'tool-clinical-trials',
+      'tool-icd10',
+      'tool-npi-registry',
+      'tool-cms-coverage',
+    ]) {
+      const spec = PLATFORM_TOOL_CATALOGUE[id];
+      expect(spec).toBeDefined();
+      expect(spec.toolType).toBe('mcp-server');
+      expect(spec.mcpEndpointUrl).toMatch(/^https:\/\//);
+      expect(() => validateToolSpec(spec)).not.toThrow();
+    }
+  });
+
+  it('accepts a valid mcp-server spec with an https endpoint', () => {
+    expect(() => validateToolSpec(pubmed)).not.toThrow();
+    expect(pubmed.mcpEndpointUrl).toBe('https://pubmed.mcp.claude.com/mcp');
+  });
+
+  it('rejects an mcp-server spec whose endpoint is not https', () => {
+    const bad: ToolSpec = { ...pubmed, mcpEndpointUrl: 'http://pubmed.mcp.claude.com/mcp' };
+    expect(() => validateToolSpec(bad)).toThrow(/https/i);
+  });
+
+  it('rejects an mcp-server spec with no endpoint', () => {
+    const bad: ToolSpec = { ...pubmed, mcpEndpointUrl: undefined };
+    expect(() => validateToolSpec(bad)).toThrow(/mcpEndpointUrl/);
+  });
+
+  it('rejects an invalid mcpListingMode', () => {
+    const bad = { ...pubmed, mcpListingMode: 'LIVE' } as unknown as ToolSpec;
+    expect(() => validateToolSpec(bad)).toThrow(/mcpListingMode/);
+  });
+
+  it('rejects mcpEndpointUrl on a lambda tool', () => {
+    const bad: ToolSpec = {
+      ...PLATFORM_TOOL_CATALOGUE['tool-echo'],
+      mcpEndpointUrl: 'https://example.com/mcp',
+    };
+    expect(() => validateToolSpec(bad)).toThrow(/mcpEndpointUrl is only valid/);
+  });
+
+  it('composes a Cedar permit for a subscribed mcp-server tool', () => {
+    const doc = composeCedarPolicyDocument(resolveSubscribedTools(['tool-pubmed']));
+    expect(doc).toMatch(/permit\(principal, action == Action::"InvokeTool", resource == Tool::"tool-pubmed"\)/);
+  });
+});
