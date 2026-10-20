@@ -44,7 +44,8 @@
     { "name": "admin-write-only", "file": "policies/admin-write-only.cedar" },
     { "name": "forbid-destructive-db", "file": "policies/forbid-destructive-db.cedar" },
     { "name": "block-large-queries", "file": "policies/block-large-queries.cedar" },
-    { "name": "sensitive-tool-restrict", "file": "policies/sensitive-tool-restrict.cedar" }
+    { "name": "sensitive-tool-restrict", "file": "policies/sensitive-tool-restrict.cedar" },
+    { "name": "ehr-clinical-staff-only", "file": "policies/ehr-clinical-staff-only.cedar" }
   ],
   "disabledPolicies": [
     { "name": "atlassian-read-all-write-admin", "file": "policies/atlassian-read-all-write-admin.cedar" },

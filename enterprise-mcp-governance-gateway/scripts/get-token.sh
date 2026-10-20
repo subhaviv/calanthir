@@ -6,31 +6,33 @@
 # AGENTCORE_JWT (and AUTH_TOKEN, for the test scripts).
 #
 # This is the inbound auth (client -> Gateway) credential. The Gateway validates
-# the JWT against the Cognito user pool's OIDC discovery URL.
+# the JWT against the loom (Calanthir) Cognito pool's OIDC discovery URL — loom is
+# the one enterprise IdP; the gateway creates no pool of its own.
 #
-# Reads connection details from SSM Parameter Store (published by the CDK stack)
-# and the demo password from Secrets Manager — never from a local state file.
-# Authenticates with ADMIN_USER_PASSWORD_AUTH (IAM-gated admin flow; the app
-# client does NOT enable the public USER_PASSWORD_AUTH flow, and there is no
-# third-party SRP dependency).
+# Reads the pool/client from SSM Parameter Store (published by the CDK stack, now
+# pointing at loom). The password comes from the COGNITO_PASSWORD env var — loom
+# users and their passwords are managed IN loom (console / your own seeding), NOT
+# by this stack, so there is no Secrets Manager demo secret to read.
+# Authenticates with ADMIN_USER_PASSWORD_AUTH (IAM-gated admin flow against the
+# loom user client; no third-party SRP dependency).
 #
-# Prereq: run `bash scripts/seed-demo-users.sh` once after deploy so the demo
-# user has a permanent password.
+# Prereq: the loom user exists with a permanent password and is in the
+# `clinical-staff` group (for the EHR tool's Cedar gate).
 #
-# Usage:
-#   source scripts/get-token.sh          # exports AGENTCORE_JWT into your shell
-#   ./scripts/get-token.sh               # prints the token to stdout
+# Usage (credentials come from your environment — none are baked into this script):
+#   COGNITO_USERNAME=<user> COGNITO_PASSWORD=<pw> source scripts/get-token.sh
+#   COGNITO_USERNAME=<user> COGNITO_PASSWORD=<pw> ./scripts/get-token.sh   # prints token
 #
-# Env overrides (take precedence over SSM/Secrets Manager):
+# Env overrides (take precedence over SSM):
 #   AWS_REGION, SSM_PREFIX, COGNITO_USER_POOL_ID, COGNITO_APP_CLIENT_ID,
-#   DEMO_SECRET_ID, COGNITO_USERNAME, COGNITO_PASSWORD, TOKEN_TYPE (access|id)
+#   COGNITO_USERNAME, COGNITO_PASSWORD, TOKEN_TYPE (access|id)
 #
 # NOTE: this script is meant to be `source`d, so it deliberately does NOT enable
 # `set -euo pipefail` globally — that would leak errexit/nounset into the caller's
 # interactive shell (and breaks under zsh, the macOS default). Errors are handled
 # explicitly via _die below.
 
-REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-west-2}}"
+REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}"
 SSM_PREFIX="${SSM_PREFIX:-/enterprise-mcp-gateway}"
 TOKEN_TYPE="${TOKEN_TYPE:-access}"   # 'access' or 'id'
 
@@ -54,31 +56,28 @@ ssm_get() {
     --query 'Parameter.Value' --output text 2>/dev/null || true
 }
 
-# --- Resolve connection details (env overrides win, else SSM) ---
+# --- Resolve connection details (env overrides win, else SSM -> loom) ---
 POOL_ID="${COGNITO_USER_POOL_ID:-$(ssm_get "${SSM_PREFIX}/cognito/pool-id")}"
 CLIENT_ID="${COGNITO_APP_CLIENT_ID:-$(ssm_get "${SSM_PREFIX}/cognito/client-id")}"
-SECRET_ID="${DEMO_SECRET_ID:-$(ssm_get "${SSM_PREFIX}/cognito/demo-secret-arn")}"
-SECRET_ID="${SECRET_ID:-enterprise-mcp-gateway/demo-user}"
 # NB: zsh reserves $USERNAME (it tracks the OS login user), so when this script is
 # sourced into zsh a local var named USERNAME won't take. Use COGNITO_USER instead.
-COGNITO_USER="${COGNITO_USERNAME:-admin@example.com}"
+# No default identity is baked in — the caller supplies COGNITO_USERNAME.
+COGNITO_USER="${COGNITO_USERNAME:-}"
 
-# Demo password from Secrets Manager (JSON {"password": "..."}); env wins.
+# Password comes from the COGNITO_PASSWORD env var. Loom users and their passwords
+# are managed in loom (the enterprise IdP), NOT by this stack — there is no
+# Secrets Manager demo secret to read.
 PASSWORD="${COGNITO_PASSWORD:-}"
-if [ -z "$PASSWORD" ]; then
-  PASSWORD="$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$SECRET_ID" \
-    --query 'SecretString' --output text 2>/dev/null \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin)["password"])' 2>/dev/null || true)"
-fi
 
 MISSING=""
 [ -z "${POOL_ID:-}" ] || [ "${POOL_ID}" = "None" ] && MISSING="${MISSING} user-pool-id"
 [ -z "${CLIENT_ID:-}" ] || [ "${CLIENT_ID}" = "None" ] && MISSING="${MISSING} app-client-id"
-[ -z "${PASSWORD:-}" ] && MISSING="${MISSING} password"
+[ -z "${COGNITO_USER:-}" ] && MISSING="${MISSING} username(set COGNITO_USERNAME)"
+[ -z "${PASSWORD:-}" ] && MISSING="${MISSING} password(set COGNITO_PASSWORD)"
 if [ -n "$MISSING" ]; then
   err "Missing required value(s):${MISSING}."
-  err "Deploy the CDK stack (publishes ${SSM_PREFIX}/cognito/*) and run"
-  err "scripts/seed-demo-users.sh, or provide the values via env vars."
+  err "Deploy the CDK stack (publishes ${SSM_PREFIX}/cognito/* pointing at loom), and"
+  err "pass the loom user's credentials via COGNITO_USERNAME and COGNITO_PASSWORD env vars."
   _die "Cannot mint a token."
   return 1 2>/dev/null || exit 1
 fi
@@ -99,14 +98,14 @@ AUTH_JSON="$(aws cognito-idp admin-initiate-auth \
   --auth-parameters "$AUTH_PARAMS" \
   --output json 2>/tmp/get-token.err)" || {
     err "admin-initiate-auth failed:"; cat /tmp/get-token.err >&2 || true
-    _die "Could not authenticate. Did you run scripts/seed-demo-users.sh?"
+    _die "Could not authenticate. Check COGNITO_USERNAME/COGNITO_PASSWORD against the loom pool."
     return 1 2>/dev/null || exit 1
   }
 
-# A permanent password (set by the seed script) means no challenge is expected.
+# A permanent password means no challenge is expected.
 CHALLENGE="$(printf '%s' "$AUTH_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("ChallengeName",""))' 2>/dev/null || true)"
 if [ -n "$CHALLENGE" ]; then
-  _die "Unexpected auth challenge '${CHALLENGE}'. Run scripts/seed-demo-users.sh to set a permanent password."
+  _die "Unexpected auth challenge '${CHALLENGE}'. Set a permanent password on the loom user (admin-set-user-password --permanent)."
   return 1 2>/dev/null || exit 1
 fi
 

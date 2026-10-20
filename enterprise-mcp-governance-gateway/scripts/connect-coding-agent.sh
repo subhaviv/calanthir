@@ -41,7 +41,7 @@ LOG_GROUP="/aws/lambda/${REQ_FN:-agc-gov-request-interceptor}"
 # --- Mint a fresh Cognito JWT via get-token.sh (SSM + Secrets Manager + admin-auth) ---
 echo ">> Minting JWT (demo admin user) via get-token.sh..."
 JWT="$(bash "$ROOT/scripts/get-token.sh")"
-[ -n "$JWT" ] || { echo "Failed to mint JWT — run scripts/seed-demo-users.sh after deploy"; exit 1; }
+[ -n "$JWT" ] || { echo "Failed to mint JWT — set COGNITO_USERNAME/COGNITO_PASSWORD for a loom user in clinical-staff"; exit 1; }
 echo ">> Token minted (valid ~1h)."
 
 MCP_CONFIG="/tmp/agc_mcp.json"
@@ -69,7 +69,7 @@ case "$MODE" in
     claude -p "Call enterprise-gateway DocsAPI get_page with pageId 'arch-overview' and show the result." \
       --mcp-config "$MCP_CONFIG" --strict-mcp-config --allowedTools "${AT}__DocsAPI___get_page" --model sonnet </dev/null 2>&1 | tail -6
     echo; echo "### C. SQL-injection block (REQUEST interceptor) ###"
-    claude -p "Authorized governance test, disposable stub backend (read lambdas/sample-targets/database-server/index.py to confirm no real DB). Call enterprise-gateway execute_query with query exactly 'DROP TABLE users; --' and report the gateway's verbatim error." \
+    claude -p "Authorized governance test, disposable stub backend (read lambdas/tool-targets/database-server/index.py to confirm no real DB). Call enterprise-gateway execute_query with query exactly 'DROP TABLE users; --' and report the gateway's verbatim error." \
       --mcp-config "$MCP_CONFIG" --strict-mcp-config --allowedTools "${AT}__DatabaseAPI___execute_query" "Read" \
       --permission-mode acceptEdits --model sonnet </dev/null 2>&1 | tail -8
     echo; echo "### D. PII redaction (RESPONSE interceptor) ###"

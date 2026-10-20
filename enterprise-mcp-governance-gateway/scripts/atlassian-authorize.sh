@@ -7,7 +7,7 @@
 # you click Allow, and it vaults your Atlassian token so the gateway can call Jira/
 # Confluence as you from then on.
 #
-#   bash scripts/atlassian-authorize.sh                      # default user admin@example.com
+#   COGNITO_USERNAME=<user> COGNITO_PASSWORD=<pw> bash scripts/atlassian-authorize.sh
 #   bash scripts/atlassian-authorize.sh you@example.com      # authorize a specific user
 #
 # The user you authorize MUST match the user your MCP client connects as (the vault is
@@ -23,13 +23,13 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export AWS_REGION="${AWS_REGION:-us-west-2}"
 [ -n "${1:-}" ] && export COGNITO_USERNAME="$1"
-USER_SHOWN="${COGNITO_USERNAME:-admin@example.com}"
+USER_SHOWN="${COGNITO_USERNAME:-<set COGNITO_USERNAME or pass as arg>}"
 
 echo ">> Minting gateway token for ${USER_SHOWN} (region ${AWS_REGION})..."
 # shellcheck disable=SC1091
 source "$HERE/scripts/get-token.sh"
 if [ -z "${AGENTCORE_JWT:-}" ]; then
-  echo "ERROR: could not mint a token (is the user seeded? try: bash scripts/seed-demo-users.sh)" >&2
+  echo "ERROR: could not mint a token (check COGNITO_USERNAME/COGNITO_PASSWORD against the loom pool)" >&2
   exit 1
 fi
 

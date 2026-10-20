@@ -20,14 +20,17 @@ from connectors.connector_auth_stack import ConnectorAuthStack
 app = cdk.App()
 
 # Account/region resolve from the CDK CLI environment at deploy time. Region
-# default matches the existing deployer (AWS_REGION, else us-west-2). With no
-# account set this is an environment-agnostic stack, which synthesizes offline.
+# default is us-east-1: every platform asset (inference gateway, GA registry,
+# guardrail, pipelines) and the EHR FHIR stack (whose VPC the EhrAPI target
+# Lambda attaches to) live in us-east-1, and a Lambda can only attach a VPC in
+# its own region. Override with AWS_REGION / CDK_DEFAULT_REGION if needed. With
+# no account set this is an environment-agnostic stack, which synthesizes offline.
 env = cdk.Environment(
     account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
     region=(
         os.environ.get("CDK_DEFAULT_REGION")
         or os.environ.get("AWS_REGION")
-        or "us-west-2"
+        or "us-east-1"
     ),
 )
 

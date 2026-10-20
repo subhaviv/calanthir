@@ -15,7 +15,7 @@ MCP endpoint that:
 - **Fronts MCP tool servers** (here: two sample Lambda targets, `DocsAPI` and
   `DatabaseAPI`) behind one MCP URL that an MCP client (e.g. Kiro) connects to.
 
-Provisioned with **AWS CDK (Python)** to your account in `us-west-2`
+Provisioned with **AWS CDK (Python)** to your account in `us-east-1`
 (configurable). After deploy, the live endpoint and all non-secret resource ids
 are published to **AWS Systems Manager Parameter Store** under
 `/enterprise-mcp-gateway/*` (and as CloudFormation stack outputs); the demo
@@ -33,7 +33,7 @@ Deploy, then prove the governance works. Five steps, ~5 minutes. Prerequisites:
 the target account.
 
 ```bash
-export AWS_REGION=us-west-2
+export AWS_REGION=us-east-1
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r cdk/requirements.txt -r requirements-dev.txt
 
@@ -130,6 +130,64 @@ authorizerConfiguration={customJWTAuthorizer: {discoveryUrl, allowedClients}})`.
 
 ---
 
+## EHR tool (clinical / PHI)
+
+The `EhrAPI` target exposes two tools that read a private HAPI FHIR EHR over the
+governed path:
+
+| Tool | Argument | Returns |
+|---|---|---|
+| `EhrAPI___ehr_fhir_lookup` | `patientId` | Patient demographics + recent observations |
+| `EhrAPI___imaging_lookup`  | `patientId` | Imaging studies/reports |
+
+**Governed path:** loom JWT → gateway JWT authorizer → **Cedar ENFORCE: only
+`cognito:groups` containing `clinical-staff` is permitted** → VPC-attached Lambda →
+private HAPI FHIR ALB → RESPONSE interceptor (**PHI redaction** — e.g. patient
+name returns as `{NAME}`). Access is a `.cedar` policy decision
+(`policies/ehr-clinical-staff-only.cedar`), not application code. A non-clinical
+user is default-denied (`-32002 Tool Execution Denied … denied by default`).
+
+### Identity
+
+Authentication is the **loom (Calanthir) Cognito pool** — the single enterprise
+IdP. The gateway creates no pool of its own; it imports loom via the
+`authUserPoolId` / `authClientId` context (defaulted in `cdk.json`). A clinician's
+loom login is the same identity that flows through to the EHR tool.
+
+### Calling the EHR tool from an agent in ANOTHER account
+
+The agent runtimes (e.g. `CaptureRuntime`, `BeaconRuntime`) run in the **consumer**
+account; the gateway is in **publisher**. The gateway validates the *token*, not
+the caller's AWS identity, so crossing accounts needs **no grant on the gateway**.
+What the consumer team needs:
+
+1. **The gateway endpoint** (regional, us-east-1):
+   `https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
+   (MCP/JSON-RPC: `tools/list`, `tools/call`).
+2. **A loom USER token — not a machine token.** It must carry the clinician's
+   `cognito:groups: clinical-staff`. The agent **propagates the signed-in
+   clinician's token**; it does not mint its own identity. An M2M/machine token is
+   correctly denied by Cedar (M2M is for the inference plane, not tool calls).
+   Sent as `Authorization: Bearer <token>`.
+3. **HTTPS egress** from the consumer runtime to that endpoint (same region). Open
+   egress works as-is; VPC-locked egress needs a route to the AgentCore endpoint.
+4. **IAM only if the agent MINTS the token itself** (AgentCore Identity OBO:
+   `GetWorkloadAccessTokenForJWT` → `GetResourceOauth2Token`). Those permissions go
+   on the **agent's own execution role in the consumer account**, and the loom
+   OAuth2 provider must be registered in the consumer account's Identity Token
+   Vault. If the clinician token is simply **propagated**, this step is not needed.
+
+**Not needed:** a cross-account role to assume into publisher; a resource-based
+policy on the gateway; `InvokeAgentRuntime` permission (this is an MCP HTTP call,
+not a runtime invoke); any publisher-account credentials.
+
+> For a treating-clinician EHR read, **token propagation** is the correct model —
+> the human's entitlement is what gates the PHI, so the human's token should flow
+> through. The OBO mint (step 4) is only for when the agent must obtain the token
+> on the user's behalf.
+
+---
+
 ## Repository layout
 
 ```
@@ -180,7 +238,7 @@ Prerequisites:
   pip install -r cdk/requirements.txt
   ```
 - AWS credentials for the target account with permission to create the resources.
-  Region defaults to `us-west-2` (override with `AWS_REGION` / `CDK_DEFAULT_REGION`).
+  Region defaults to `us-east-1` (override with `AWS_REGION` / `CDK_DEFAULT_REGION`).
 - A **container runtime** (Docker, Finch, or Podman) **running** — the connector and
   connector stacks bundle their Lambda dependencies with CDK's Docker bundling (it runs
   `pip install` inside the official Lambda build image), and the Atlassian connector also
@@ -188,7 +246,7 @@ Prerequisites:
   `CDK_DOCKER=finch cdk deploy`. The core gateway stack alone does not need it.
 
 ```bash
-export AWS_REGION=us-west-2
+export AWS_REGION=us-east-1
 aws sts get-caller-identity                       # confirm the target account
 
 cd cdk
@@ -350,7 +408,7 @@ The script writes this for you; this is the shape it produces, at `.kiro/setting
   "mcpServers": {
     "enterprise-gateway": {
       "type": "http",
-      "url": "https://<gateway-id>.gateway.bedrock-agentcore.us-west-2.amazonaws.com/mcp",
+      "url": "https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp",
       "headers": { "Authorization": "Bearer ${AGENTCORE_JWT}" }
     }
   }

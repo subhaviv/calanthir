@@ -1,0 +1,883 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "halo-er-sepsis",
+        "identifier": [
+          {
+            "system": "http://emed.example/mrn",
+            "value": "ER-20002"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Nakamura",
+            "given": [
+              "Yuki"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1954-09-02"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/halo-er-sepsis"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "halo-er-sepsis-enc",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "EMER",
+          "display": "emergency"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "50849002",
+                "display": "Emergency room admission"
+              }
+            ]
+          }
+        ],
+        "priority": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "25876001",
+              "display": "Emergency"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "period": {
+          "start": "2026-10-15T14:05:00Z",
+          "end": "2026-10-15T17:05:00Z"
+        },
+        "reasonCode": [
+          {
+            "text": "Fever, confusion, and low blood pressure"
+          }
+        ],
+        "hospitalization": {
+          "dischargeDisposition": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/discharge-disposition",
+                "code": "other-hcf",
+                "display": "Admitted to ICU"
+              }
+            ]
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Encounter/halo-er-sepsis-enc"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "halo-er-sepsis-cc",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "386661006",
+              "display": "Fever, confusion, and low blood pressure"
+            }
+          ],
+          "text": "Fever, confusion, and low blood pressure"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "onsetDateTime": "2026-10-15T12:05:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/halo-er-sepsis-cc"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "halo-er-sepsis-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "91302008",
+              "display": "Sepsis due to urinary tract infection"
+            }
+          ],
+          "text": "Sepsis due to urinary tract infection"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "recordedDate": "2026-10-15T15:35:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/halo-er-sepsis-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart rate"
+            }
+          ],
+          "text": "Heart rate"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:15:00Z",
+        "valueQuantity": {
+          "value": 122,
+          "unit": "beats/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        },
+        "id": "halo-er-sepsis-vital-0"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-vital-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "9279-1",
+              "display": "Respiratory rate"
+            }
+          ],
+          "text": "Respiratory rate"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:15:00Z",
+        "valueQuantity": {
+          "value": 26,
+          "unit": "breaths/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        },
+        "id": "halo-er-sepsis-vital-1"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-vital-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59408-5",
+              "display": "Oxygen saturation"
+            }
+          ],
+          "text": "Oxygen saturation"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:15:00Z",
+        "valueQuantity": {
+          "value": 91,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "id": "halo-er-sepsis-vital-2"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-vital-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8310-5",
+              "display": "Body temperature"
+            }
+          ],
+          "text": "Body temperature"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:15:00Z",
+        "valueQuantity": {
+          "value": 39.4,
+          "unit": "Cel",
+          "system": "http://unitsofmeasure.org",
+          "code": "Cel"
+        },
+        "id": "halo-er-sepsis-vital-3"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-vital-3"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure"
+            }
+          ],
+          "text": "Blood pressure"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:15:00Z",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 86,
+              "unit": "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 52,
+              "unit": "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ],
+        "id": "halo-er-sepsis-vital-4"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-vital-4"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "halo-er-sepsis-sr-0",
+        "status": "completed",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1975-2",
+              "display": "Lactate"
+            }
+          ],
+          "text": "Lactate"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "authoredOn": "2026-10-15T14:20:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/halo-er-sepsis-sr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1975-2",
+              "display": "Lactate"
+            }
+          ],
+          "text": "Lactate"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:45:00Z",
+        "valueQuantity": {
+          "value": 4.1,
+          "unit": "mmol/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "mmol/L"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ],
+        "id": "halo-er-sepsis-lab-0-0"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-lab-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "halo-er-sepsis-dr-0",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1975-2",
+              "display": "Lactate"
+            }
+          ],
+          "text": "Lactate"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:45:00Z",
+        "issued": "2026-10-15T14:45:00Z",
+        "basedOn": [
+          {
+            "reference": "ServiceRequest/halo-er-sepsis-sr-0"
+          }
+        ],
+        "conclusion": "Elevated lactate - tissue hypoperfusion",
+        "result": [
+          {
+            "reference": "Observation/halo-er-sepsis-lab-0-0"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/halo-er-sepsis-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "halo-er-sepsis-sr-1",
+        "status": "completed",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6690-2",
+              "display": "White blood cell count"
+            }
+          ],
+          "text": "White blood cell count"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "authoredOn": "2026-10-15T14:20:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/halo-er-sepsis-sr-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6690-2",
+              "display": "WBC"
+            }
+          ],
+          "text": "WBC"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:47:00Z",
+        "valueQuantity": {
+          "value": 18.6,
+          "unit": "10*3/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*3/uL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ],
+        "id": "halo-er-sepsis-lab-1-0"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/halo-er-sepsis-lab-1-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "halo-er-sepsis-dr-1",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6690-2",
+              "display": "White blood cell count"
+            }
+          ],
+          "text": "White blood cell count"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T14:47:00Z",
+        "issued": "2026-10-15T14:47:00Z",
+        "basedOn": [
+          {
+            "reference": "ServiceRequest/halo-er-sepsis-sr-1"
+          }
+        ],
+        "conclusion": "Leukocytosis",
+        "result": [
+          {
+            "reference": "Observation/halo-er-sepsis-lab-1-0"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/halo-er-sepsis-dr-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "halo-er-sepsis-sr-2",
+        "status": "completed",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "630-4",
+              "display": "Urine culture"
+            }
+          ],
+          "text": "Urine culture"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "authoredOn": "2026-10-15T14:30:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/halo-er-sepsis-sr-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "halo-er-sepsis-dr-2",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "630-4",
+              "display": "Urine culture"
+            }
+          ],
+          "text": "Urine culture"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "effectiveDateTime": "2026-10-15T15:35:00Z",
+        "issued": "2026-10-15T15:35:00Z",
+        "basedOn": [
+          {
+            "reference": "ServiceRequest/halo-er-sepsis-sr-2"
+          }
+        ],
+        "conclusion": "Gram-negative rods - E. coli suspected"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/halo-er-sepsis-dr-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "halo-er-sepsis-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "392230005",
+              "display": "Insertion of peripheral IV cannula"
+            }
+          ],
+          "text": "Insertion of peripheral IV cannula"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "performedDateTime": "2026-10-15T14:23:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/halo-er-sepsis-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "halo-er-sepsis-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "34121006",
+              "display": "Urinary catheterization"
+            }
+          ],
+          "text": "Urinary catheterization"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "performedDateTime": "2026-10-15T14:40:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/halo-er-sepsis-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "halo-er-sepsis-med-0",
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "723",
+              "display": "Piperacillin-tazobactam IV"
+            }
+          ],
+          "text": "Piperacillin-tazobactam IV"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "authoredOn": "2026-10-15T14:55:00Z",
+        "dosageInstruction": [
+          {
+            "text": "4.5 g IV q6h"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/halo-er-sepsis-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "halo-er-sepsis-med-1",
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "9863",
+              "display": "Sodium chloride 0.9% IV"
+            }
+          ],
+          "text": "Sodium chloride 0.9% IV"
+        },
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "authoredOn": "2026-10-15T14:25:00Z",
+        "dosageInstruction": [
+          {
+            "text": "30 mL/kg bolus"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/halo-er-sepsis-med-1"
+      }
+    }
+  ]
+}

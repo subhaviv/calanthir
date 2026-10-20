@@ -29,6 +29,7 @@ from aws_cdk import (
     aws_bedrock as bedrock,
     aws_bedrockagentcore as agentcore,
     aws_cognito as cognito,
+    aws_ec2 as ec2,
     aws_iam as iam,
     aws_kms as kms,
     aws_lambda as lambda_,
@@ -46,6 +47,7 @@ SCHEMAS_DIR = REPO_ROOT / "schemas"
 TARGET_DEFS = {
     "DocsAPI": ("DocsApiTarget", "docs_target", "docs-tools.json"),
     "DatabaseAPI": ("DatabaseApiTarget", "database_target", "database-tools.json"),
+    "EhrAPI": ("EhrApiTarget", "ehr_target", "ehr-tools.json"),
 }
 
 MANIFEST_PATH = REPO_ROOT / "policies" / "manifest.json"
@@ -112,8 +114,9 @@ GATEWAY_NAME = "enterprise-mcp-gateway"
 LAMBDA_DEFS = {
     "request_interceptor": ("RequestInterceptor", "request-interceptor"),
     "response_interceptor": ("ResponseInterceptor", "response-interceptor"),
-    "docs_target": ("DocsTarget", "sample-targets/docs-server"),
-    "database_target": ("DatabaseTarget", "sample-targets/database-server"),
+    "docs_target": ("DocsTarget", "tool-targets/docs-server"),
+    "database_target": ("DatabaseTarget", "tool-targets/database-server"),
+    "ehr_target": ("EhrTarget", "tool-targets/ehr-server"),
 }
 
 
@@ -157,7 +160,11 @@ class EnterpriseGatewayStack(Stack):
         #    script (Option B), deferred until after the SSM/outputs slice (Risk #3),
         #    since that script consumes the published discovery values.
         self.user_pool, self.user_pool_client = self._create_cognito()
-        self.demo_secret = self._create_demo_credential()
+
+        # Authorizer identity source = the imported loom IdP (see _create_cognito).
+        # The Cedar policies match on cognito:groups, which is pool-agnostic.
+        self.auth_user_pool_id = self.user_pool.user_pool_id
+        self.auth_client_ids = [self.user_pool_client.user_pool_client_id]
 
         # 4. Cedar policy engine, encrypted with the customer-managed key.
         self.policy_engine = self._create_policy_engine()
@@ -215,7 +222,37 @@ class EnterpriseGatewayStack(Stack):
         deployer where the sample targets touch no other AWS service.
         """
         functions: dict[str, lambda_.Function] = {}
+        # EHR target is VPC-attached (reaches the private HAPI ALB) and gets the
+        # FHIR base URL; sourced from context with the live agentops-ehr-fhir
+        # stack outputs as defaults. Other targets are networkless.
+        ehr_vpc_id = self.node.try_get_context("ehrVpcId") or "vpc-0e92aea5ffbbfbf8b"
+        ehr_subnets = (
+            self.node.try_get_context("ehrPrivateSubnetIds")
+            or "subnet-029ce493bd50f36cd,subnet-060ad5a6c7192a9f0"
+        ).split(",")
+        ehr_sg_id = self.node.try_get_context("ehrSecurityGroupId") or "sg-0ad61e5de45435bed"
+        ehr_fhir_base = (
+            self.node.try_get_context("ehrFhirBaseUrl")
+            or "http://internal-ehr-fhir-nonprod-1007114648.us-east-1.elb.amazonaws.com/fhir"
+        )
+        ehr_vpc = ec2.Vpc.from_vpc_attributes(
+            self,
+            "EhrVpc",
+            vpc_id=ehr_vpc_id,
+            availability_zones=[f"{self.region}a", f"{self.region}b"],
+            private_subnet_ids=[s.strip() for s in ehr_subnets if s.strip()],
+        )
+        ehr_sg = ec2.SecurityGroup.from_security_group_id(self, "EhrSg", ehr_sg_id)
+
         for key, (cid, src) in LAMBDA_DEFS.items():
+            extra = {}
+            if key == "ehr_target":
+                extra = dict(
+                    vpc=ehr_vpc,
+                    vpc_subnets=ec2.SubnetSelection(subnets=ehr_vpc.private_subnets),
+                    security_groups=[ehr_sg],
+                    environment={"FHIR_BASE_URL": ehr_fhir_base},
+                )
             functions[key] = lambda_.Function(
                 self,
                 cid,
@@ -225,6 +262,7 @@ class EnterpriseGatewayStack(Stack):
                 timeout=Duration.seconds(30),
                 memory_size=256,
                 description=f"Enterprise MCP gateway: {cid} (CDK)",
+                **extra,
             )
         return functions
 
@@ -534,110 +572,39 @@ class EnterpriseGatewayStack(Stack):
     # ------------------------------------------------------------------
     # 3. Identity
     # ------------------------------------------------------------------
-    def _create_cognito(self) -> tuple[cognito.UserPool, cognito.UserPoolClient]:
-        """Cognito user pool with an admin-auth app client.
+    def _create_cognito(self) -> tuple[cognito.IUserPool, cognito.IUserPoolClient]:
+        """Import the enterprise IdP (loom) — the gateway creates NO pool of its own.
 
-        Risk #2 / AWS best practice: the app client enables ONLY
-        ADMIN_USER_PASSWORD_AUTH, which is IAM-gated (callable only via the
-        AdminInitiateAuth API by the trusted deployer) — the *public*
-        USER_PASSWORD_AUTH flow the reference deployer used is deliberately
-        omitted. This keeps the entire token path on AWS-official boto3 admin
-        APIs (admin_set_user_password + admin_initiate_auth) with NO third-party
-        SRP/crypto dependency to vet. Refresh-token auth is always enabled.
-        (SRP via USER_SRP_AUTH would avoid transmitting the password at all but
-        requires an unvetted third-party library; for a customer-facing sample,
-        avoiding that dependency outweighs the back-channel transmission.)
+        In this platform there is exactly ONE identity provider: the loom /
+        Calanthir Cognito pool (``us-east-1_NoErXe1QA``). Every component — the
+        Calanthir app, this gateway, the agents, M2M callers — authenticates
+        against it, so a clinician login in the Calanthir UI flows straight
+        through to the governed EHR tool with the same token.
 
-        The hosted domain and an M2M (client-credentials) client are deferred:
-        the gateway authenticates via the user pool's OIDC discovery URL (not the
-        hosted domain), and the user-scoped Cedar policies need a *user* token.
-        Demo-user *records* and the permanent-password set are handled by a
-        post-deploy seed script (Option B); the generated credential itself lives
-        in Secrets Manager (see ``_create_demo_credential``).
+        The pool id and app-client id come from CDK context (``authUserPoolId`` /
+        ``authClientId``), defaulted in ``cdk.json`` to the loom pool. They are
+        IMPORTED (read-only ``from_user_pool_id`` / ``from_user_pool_client_id``):
+        the gateway owns no identity resources, it only TRUSTS the one issuer.
+        Demo users, the ``clinical-staff`` group and passwords are managed IN loom
+        (by the seed script / console), not by this stack.
+
+        The Cedar policies match on ``cognito:groups`` (pool-agnostic), so pointing
+        at loom needs no policy change.
         """
-        pool = cognito.UserPool(
-            self,
-            "UserPool",
-            sign_in_aliases=cognito.SignInAliases(email=True),
-            auto_verify=cognito.AutoVerifiedAttrs(email=True),
-            self_sign_up_enabled=False,
-            password_policy=cognito.PasswordPolicy(
-                min_length=8,
-                require_lowercase=True,
-                require_uppercase=True,
-                require_digits=True,
-                require_symbols=True,
-            ),
-            # JWT carries custom:role -> exposed as a Cedar principal tag. NOTE
-            # (from README): custom:role currently lands in the ID token, not the
-            # access token the gateway validates; a pre-token-generation Lambda to
-            # surface it in the access token is a tracked enhancement.
-            custom_attributes={
-                "role": cognito.StringAttribute(min_len=1, max_len=64, mutable=True),
-            },
-            removal_policy=RemovalPolicy.DESTROY,  # demo: cdk destroy fully tears down
-        )
+        pool_id = self.node.try_get_context("authUserPoolId")
+        client_id = self.node.try_get_context("authClientId")
+        if not pool_id or not client_id:
+            raise ValueError(
+                "authUserPoolId and authClientId context are required — "
+                "the gateway imports the loom enterprise IdP and creates no pool. "
+                "Defaults live in cdk.json; override with -c if needed."
+            )
 
-        # Resource server + custom scopes for the documented OAuth/M2M scope
-        # pattern. SRP demo tokens carry Cognito's default scope, so these custom
-        # scopes are exercised only once a hosted domain + OAuth flow is added.
-        pool.add_resource_server(
-            "ResourceServer",
-            identifier="mcp-gateway",
-            scopes=[
-                cognito.ResourceServerScope(scope_name="read", scope_description="Read access"),
-                cognito.ResourceServerScope(scope_name="write", scope_description="Write access"),
-                cognito.ResourceServerScope(
-                    scope_name="admin:sensitive", scope_description="Sensitive admin access"
-                ),
-            ],
-        )
-
-        client = pool.add_client(
-            "AppClient",
-            # IAM-gated admin flow; NOT the public user_password flow. Lets the
-            # seed/token script mint a user token via boto3 admin_initiate_auth
-            # with no third-party SRP library.
-            auth_flows=cognito.AuthFlow(admin_user_password=True),
-            generate_secret=False,  # IAM authorizes the admin call; no SECRET_HASH needed
-            supported_identity_providers=[
-                cognito.UserPoolClientIdentityProvider.COGNITO,
-            ],
+        pool = cognito.UserPool.from_user_pool_id(self, "LoomUserPool", pool_id)
+        client = cognito.UserPoolClient.from_user_pool_client_id(
+            self, "LoomUserPoolClient", client_id
         )
         return pool, client
-
-    # ------------------------------------------------------------------
-    # 3b. Demo credential (Secrets Manager) - replaces the file-stored password
-    # ------------------------------------------------------------------
-    def _create_demo_credential(self) -> secretsmanager.Secret:
-        """Generate the demo user password into Secrets Manager (Risk #2).
-
-        Replaces the reference deployer's generated-password-in-DEPLOY_STATE.json.
-        The post-deploy seed script reads this secret and applies it to the demo
-        user(s) via ``admin_set_user_password``. One shared password across the
-        throwaway demo identities keeps it to a single secret; switch to per-user
-        secrets if stricter separation is wanted.
-
-        ``require_each_included_type`` guarantees an upper/lower/digit/symbol mix so
-        the value satisfies the pool's password policy; shell/JSON-hostile
-        characters (and the CLI-shorthand delimiters ``,`` and ``=``) are excluded
-        so the value is safe to use from the seed/token scripts.
-        """
-        return secretsmanager.Secret(
-            self,
-            "DemoUserSecret",
-            secret_name="enterprise-mcp-gateway/demo-user",  # nosec B106 - Secrets Manager secret NAME, not a credential; the password is generated by Secrets Manager (see generate_secret_string above)
-            description="Generated password for the demo Cognito user(s). DEMO ONLY.",
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template=json.dumps({}),
-                generate_string_key="password",
-                password_length=20,
-                require_each_included_type=True,
-                exclude_characters="\"'`\\$/@: {}[],=",
-            ),
-            encryption_key=self.encryption_key,  # customer-managed KMS, rotation enabled
-            removal_policy=RemovalPolicy.DESTROY,  # demo: cdk destroy removes it
-        )
 
     # ------------------------------------------------------------------
     # 4. Cedar policy engine
@@ -677,7 +644,7 @@ class EnterpriseGatewayStack(Stack):
         """
         self.discovery_url = (
             f"https://cognito-idp.{self.region}.amazonaws.com/"
-            f"{self.user_pool.user_pool_id}/.well-known/openid-configuration"
+            f"{self.auth_user_pool_id}/.well-known/openid-configuration"
         )
 
         def _interceptor(point: str, fn: lambda_.Function):
@@ -705,7 +672,7 @@ class EnterpriseGatewayStack(Stack):
             authorizer_configuration=agentcore.CfnGateway.AuthorizerConfigurationProperty(
                 custom_jwt_authorizer=agentcore.CfnGateway.CustomJWTAuthorizerConfigurationProperty(
                     discovery_url=self.discovery_url,
-                    allowed_clients=[self.user_pool_client.user_pool_client_id],
+                    allowed_clients=self.auth_client_ids,
                 ),
             ),
             interceptor_configurations=[
@@ -895,14 +862,15 @@ class EnterpriseGatewayStack(Stack):
             "cognito/pool-id": self.user_pool.user_pool_id,
             "cognito/client-id": self.user_pool_client.user_pool_client_id,
             "cognito/discovery-url": self.discovery_url,
-            "cognito/demo-secret-arn": self.demo_secret.secret_arn,
             "targets/docs-api-id": self.targets["DocsAPI"].attr_target_id,
             "targets/database-api-id": self.targets["DatabaseAPI"].attr_target_id,
+            "targets/ehr-api-id": self.targets["EhrAPI"].attr_target_id,
             "roles/gateway-exec-arn": self.gateway_role.role_arn,
             "lambda/request-interceptor-arn": self.functions["request_interceptor"].function_arn,
             "lambda/response-interceptor-arn": self.functions["response_interceptor"].function_arn,
             "lambda/docs-target-arn": self.functions["docs_target"].function_arn,
             "lambda/database-target-arn": self.functions["database_target"].function_arn,
+            "lambda/ehr-target-arn": self.functions["ehr_target"].function_arn,
         }
         for suffix, value in params.items():
             # Construct id: PascalCase from the suffix path (e.g. gateway/url -> GatewayUrlParam).
@@ -919,5 +887,4 @@ class EnterpriseGatewayStack(Stack):
         CfnOutput(self, "DiscoveryUrl", value=self.discovery_url)
         CfnOutput(self, "UserPoolId", value=self.user_pool.user_pool_id)
         CfnOutput(self, "AppClientId", value=self.user_pool_client.user_pool_client_id)
-        CfnOutput(self, "DemoSecretArn", value=self.demo_secret.secret_arn)
         CfnOutput(self, "SsmParameterPrefix", value=prefix)

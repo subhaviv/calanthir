@@ -1,0 +1,26 @@
+{
+  "tools": [
+    {
+      "name": "ehr_fhir_lookup",
+      "description": "Look up a patient's FHIR record (demographics + recent Observations) from the governed EHR. Clinical PHI — restricted to clinical staff.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "patientId": { "type": "string", "description": "FHIR Patient logical id (e.g. sterling-4870292 or halo-er-chestpain)" }
+        },
+        "required": ["patientId"]
+      }
+    },
+    {
+      "name": "imaging_lookup",
+      "description": "Look up a patient's imaging studies (FHIR ImagingStudy) from the governed EHR. Clinical PHI — restricted to clinical staff.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "patientId": { "type": "string", "description": "FHIR Patient logical id whose ImagingStudy resources to return" }
+        },
+        "required": ["patientId"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,417 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Standalone HAPI FHIR R4 server (persistent, private) that SUPPORTS the Agentic AI
+  Platform blueprint but is NOT part of any agent's own infrastructure. The benefits-qa
+  agent reaches this EHR only through an AgentCore Gateway tool target (ehr_fhir_lookup /
+  imaging_lookup) governed by a JWT authorizer + Cedar policy, so ALLOW/DENY is a platform
+  decision, not an in-agent Python check. This stack creates its own VPC, ECS Fargate
+  service running hapiproject/hapi, an RDS PostgreSQL backing store, and a private internal
+  ALB. No public ingress.
+
+Parameters:
+  EnvName:
+    Type: String
+    Default: nonprod
+    Description: Environment suffix for resource names.
+  HapiImage:
+    Type: String
+    Default: hapiproject/hapi:latest
+    Description: HAPI FHIR container image (Docker Hub).
+  DbUsername:
+    Type: String
+    Default: hapi
+    Description: Master username for the HAPI Postgres database.
+  DbPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+    Description: Master password for the HAPI Postgres database (>=12 chars).
+  DbInstanceClass:
+    Type: String
+    Default: db.t3.micro
+  VpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+
+Resources:
+
+  # ───────────────────────── Networking ─────────────────────────
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-vpc"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-igw"
+
+  IgwAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Select [0, !Cidr [!Ref VpcCidr, 6, 8]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-public-1"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Select [1, !Cidr [!Ref VpcCidr, 6, 8]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-public-2"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Select [2, !Cidr [!Ref VpcCidr, 6, 8]]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-private-1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Select [3, !Cidr [!Ref VpcCidr, 6, 8]]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-private-2"
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-public-rt"
+
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IgwAttach
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RtAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RtAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  NatEip:
+    Type: AWS::EC2::EIP
+    DependsOn: IgwAttach
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-nat"
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-private-rt"
+
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RtAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RtAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  # ───────────────────────── Security groups ─────────────────────────
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Internal ALB for HAPI FHIR - ingress only from the gateway-tool SG.
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-alb-sg"
+
+  GatewayToolSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Attach to the AgentCore Gateway Lambda target to grant reach to HAPI ALB.
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-gateway-tool-sg"
+
+  AlbIngressFromGatewayTool:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AlbSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref GatewayToolSecurityGroup
+
+  ServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: HAPI Fargate task - ingress only from the ALB.
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-svc-sg"
+
+  ServiceIngressFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ServiceSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: !Ref AlbSecurityGroup
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: HAPI Postgres - ingress only from the Fargate task SG.
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-db-sg"
+
+  DbIngressFromService:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DbSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref ServiceSecurityGroup
+
+  # ───────────────────────── RDS PostgreSQL ─────────────────────────
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnets for HAPI Postgres.
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  HapiDatabase:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DBInstanceIdentifier: !Sub "agentops-ehr-fhir-${EnvName}"
+      Engine: postgres
+      DBName: hapi
+      DBInstanceClass: !Ref DbInstanceClass
+      AllocatedStorage: "20"
+      StorageType: gp3
+      MasterUsername: !Ref DbUsername
+      MasterUserPassword: !Ref DbPassword
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroup
+      PubliclyAccessible: false
+      MultiAZ: false
+      BackupRetentionPeriod: 1
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "agentops-ehr-fhir-${EnvName}-db"
+
+  # ───────────────────────── ECS / Fargate ─────────────────────────
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "agentops-ehr-fhir-${EnvName}"
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/agentops/ehr-fhir/${EnvName}"
+      RetentionInDays: 14
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "agentops-ehr-fhir-${EnvName}"
+      Cpu: "1024"
+      Memory: "2048"
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: hapi
+          Image: !Ref HapiImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+          Environment:
+            - Name: SPRING_DATASOURCE_URL
+              Value: !Sub "jdbc:postgresql://${HapiDatabase.Endpoint.Address}:5432/hapi"
+            - Name: SPRING_DATASOURCE_USERNAME
+              Value: !Ref DbUsername
+            - Name: SPRING_DATASOURCE_PASSWORD
+              Value: !Ref DbPassword
+            - Name: SPRING_DATASOURCE_DRIVERCLASSNAME
+              Value: org.postgresql.Driver
+            - Name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              Value: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
+            - Name: HAPI_FHIR_FHIR_VERSION
+              Value: R4
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: hapi
+
+  # ───────────────────────── Internal ALB ─────────────────────────
+  InternalAlb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "ehr-fhir-${EnvName}"
+      Scheme: internal
+      Type: application
+      Subnets:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "ehr-fhir-${EnvName}"
+      VpcId: !Ref Vpc
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckPath: /fhir/metadata
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: "200,201"
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref InternalAlb
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      ServiceName: !Sub "agentops-ehr-fhir-${EnvName}"
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      HealthCheckGracePeriodSeconds: 300
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          SecurityGroups:
+            - !Ref ServiceSecurityGroup
+      LoadBalancers:
+        - ContainerName: hapi
+          ContainerPort: 8080
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  FhirBaseUrl:
+    Description: Internal FHIR base URL for the gateway tool Lambda to call.
+    Value: !Sub "http://${InternalAlb.DNSName}/fhir"
+  GatewayToolSecurityGroupId:
+    Description: Attach this SG to the AgentCore Gateway Lambda target to grant reach to HAPI.
+    Value: !Ref GatewayToolSecurityGroup
+  VpcId:
+    Value: !Ref Vpc
+  PrivateSubnets:
+    Value: !Sub "${PrivateSubnet1},${PrivateSubnet2}"
+  DbEndpoint:
+    Value: !GetAtt HapiDatabase.Endpoint.Address
