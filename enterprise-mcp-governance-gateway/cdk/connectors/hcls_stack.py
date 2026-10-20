@@ -60,10 +60,14 @@ def _t(name, desc, props, required):
             "inputSchema": {"type": "object", "properties": props, "required": required}}
 
 
-# One hosted MCP server = one gateway target. `listing_mode='DYNAMIC'` fetches the
-# server's tool list LIVE at tools/list time (DEFAULT's control-plane cache did not
-# surface these tools in the unified list even after explicit sync). `international` is documentation only — it records whether the tool is
-# safe for a non-US clinical demo (PubMed/Trials) or US-coding-specific (ICD-10/NPI/CMS).
+# One hosted MCP server = one gateway target. `listing_mode='DEFAULT'` discovers +
+# caches the server's tools via synchronization (works now the gateway supports
+# protocol version 2025-06-18). The policy engine is ENFORCE, so each tool needs an
+# explicit Cedar permit or it is denied-by-default AND hidden from tools/list — hence
+# the `tools` list below, used to emit one read permit per tool. Tool names are the
+# servers' REAL tool names (verified by calling each hosted server's tools/list).
+# `international` is documentation only — whether the target is safe for a non-US
+# clinical demo (PubMed/Trials) or US-coding-specific (ICD-10/NPI/CMS).
 HCLS_TARGETS = [
     {
         "name": "PubMed",
@@ -71,6 +75,9 @@ HCLS_TARGETS = [
         "endpoint": "https://pubmed.mcp.claude.com/mcp",
         "international": True,
         "description": "PubMed biomedical literature search. Query by clinical concept, never patient identifiers.",
+        "tools": ["search_articles", "get_article_metadata", "find_related_articles",
+                  "lookup_article_by_citation", "convert_article_ids",
+                  "get_full_text_article", "get_copyright_status"],
     },
     {
         "name": "ClinicalTrials",
@@ -78,6 +85,8 @@ HCLS_TARGETS = [
         "endpoint": "https://hcls.mcp.claude.com/clinical_trials/mcp",
         "international": True,
         "description": "Clinical trials registry search. Query by condition/criteria, never patient identifiers.",
+        "tools": ["search_trials", "get_trial_details", "search_by_sponsor",
+                  "search_investigators", "analyze_endpoints", "search_by_eligibility"],
     },
     {
         "name": "Icd10",
@@ -85,6 +94,8 @@ HCLS_TARGETS = [
         "endpoint": "https://hcls.mcp.claude.com/icd10_codes/mcp",
         "international": False,
         "description": "ICD-10 code lookup/validation (US-centric ICD-10-CM). For coding/RCM use cases.",
+        "tools": ["lookup_code", "search_codes", "validate_code", "get_hierarchy",
+                  "get_by_category", "get_by_body_system"],
     },
     {
         "name": "NpiRegistry",
@@ -92,6 +103,7 @@ HCLS_TARGETS = [
         "endpoint": "https://hcls.mcp.claude.com/npi_registry/mcp",
         "international": False,
         "description": "NPI provider registry lookup (US-only CMS NPI). For US coding/RCM use cases.",
+        "tools": ["npi_validate", "npi_lookup", "npi_search"],
     },
     {
         "name": "CmsCoverage",
@@ -99,6 +111,8 @@ HCLS_TARGETS = [
         "endpoint": "https://hcls.mcp.claude.com/cms_coverage/mcp",
         "international": False,
         "description": "CMS coverage/policy lookup (US-centric). For coding/PA/RCM use cases.",
+        "tools": ["search_national_coverage", "search_local_coverage", "get_coverage_document",
+                  "get_contractors", "get_whats_new_report", "batch_get_ncds", "sad_exclusion_list"],
     },
 ]
 
@@ -115,6 +129,8 @@ class HclsConnectorStack(Stack):
             self, "/enterprise-mcp-gateway/gateway/id")
         gateway_arn = ssm.StringParameter.value_for_string_parameter(
             self, "/enterprise-mcp-gateway/gateway/arn")
+        policy_engine_id = ssm.StringParameter.value_for_string_parameter(
+            self, "/enterprise-mcp-gateway/policy-engine/id")
 
         for spec in selected:
             endpoint = spec["endpoint"]
@@ -148,26 +164,33 @@ class HclsConnectorStack(Stack):
                 # server later requires a key.
             )
 
-            # Cedar policies are NOT created here. The AgentCore policy engine
-            # validates each permit's action against the target's REAL tool names
-            # (action == AgentCore::Action::"<TargetName>___<tool>") and rejects an
-            # unknown action ("unable to find an applicable action"). With
-            # listing_mode='DEFAULT' (dynamic discovery) the tool names are not known
-            # at synth time, so a per-tool permit cannot be written yet — a guessed
-            # action (e.g. "<Target>___query") fails CREATE with a parse/validation
-            # error. The permits are a FOLLOW-UP once the real tool names are known:
-            # deploy the target, run `aws bedrock-agentcore-control list-gateway-targets`
-            # / inspect the discovered tools, then add one
-            #   permit(principal is AgentCore::OAuthUser,
-            #          action == AgentCore::Action::"<TargetName>___<tool>",
-            #          resource == AgentCore::Gateway::"<gateway_arn>");
-            # CfnPolicy per tool (mirroring policies/allow-docs-read.cedar).
-            #
-            # NOTE: if the gateway's policy engine is in ENFORCE mode, a target with no
-            # permits is DENIED by default (safe). If it is LOG_ONLY, every call is
-            # permitted silently until the permits land — add the policies before
-            # relying on governance for these tools.
-            _ = gateway_arn  # referenced by the follow-up policies; kept for clarity
+            # One Cedar permit per REAL tool. The policy engine is ENFORCE, so a tool
+            # with no permit is denied-by-default AND hidden from tools/list (confirmed
+            # live: a call to PubMed___search_articles returned "No policy applies ...
+            # denied by default" until these permits existed). The action MUST be
+            # "<TargetName>___<realToolName>" — the engine validates it against the
+            # target's discovered tools and rejects an unknown action, which is why an
+            # earlier guessed "<Target>___query" failed. Unconditional read permit for
+            # every authenticated gateway user — these are public reference tools; the
+            # gateway still authenticates + audits + interceptor-scans each call, and the
+            # agent's skill instructions forbid PHI in a query.
+            for tool in spec.get("tools", []):
+                action = f"{spec['name']}___{tool}"
+                statement = (
+                    "permit(\n"
+                    "  principal is AgentCore::OAuthUser,\n"
+                    f'  action == AgentCore::Action::"{action}",\n'
+                    f'  resource == AgentCore::Gateway::"{gateway_arn}"\n'
+                    ");"
+                )
+                pol = agentcore.CfnPolicy(
+                    self, f"Policy{spec['name']}{tool.title().replace('_', '')}",
+                    policy_engine_id=policy_engine_id,
+                    name=f"hcls_{spec['tool_id'].replace('-', '_')}_{tool}",
+                    definition={"cedar": {"statement": statement}},
+                    validation_mode="IGNORE_ALL_FINDINGS",  # unconditional read permit is intentional
+                )
+                pol.node.add_dependency(target)
 
             CfnOutput(self, f"{spec['name']}Endpoint", value=endpoint,
                       description=f"{spec['name']} hosted MCP endpoint fronted by the gateway")
