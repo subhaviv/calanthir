@@ -1354,14 +1354,17 @@ switch (stage) {
     workloadProdEnv:    { account: "172873868821", region: "us-east-1" },
     workloadNonprodAvailabilityZones: ["us-east-1a","us-east-1b"],
     workloadProdAvailabilityZones:    ["us-east-1a","us-east-1b"],
+    // Pass ONLY what the platform/pipeline genuinely owns. Do NOT forward
+    // agentImageUri or the inference values from the platform app's context — they
+    // are empty here and an empty override BEATS the workload repo's own
+    // cdk.context.json (an OMITTED key lets the repo's value win; an empty string
+    // clobbers it). The empty agentImageUri is exactly why the AgentCore runtime
+    // (gated on `if (props.agentImageUri)`) was skipped. sharedSynthContext is NOT
+    // spread for the same reason — it bleeds platform-wide defaults (e.g.
+    // tenantId=calanthir) into the workload synth.
     synthContext: {
-      ...sharedSynthContext,
       "agenticai/deployWorkloadApp": "true",
       "agenticai/auditOamSinkArn": "arn:aws:oam:us-east-1:195698601974:sink/e811f3e7-75be-47fd-ae90-452064c75636",
-      "agenticai/inferenceM2mSecretArn": String(app.node.tryGetContext("agenticai/inferenceM2mSecretArn") ?? ""),
-      "agenticai/inferenceGatewayUrl":   String(app.node.tryGetContext("agenticai/inferenceGatewayUrl") ?? ""),
-      "agenticai/inferenceModelId":      String(app.node.tryGetContext("agenticai/inferenceModelId") ?? ""),
-      "agenticai/agentImageUri":         String(app.node.tryGetContext("agenticai/agentImageUri") ?? ""),
     },
   });
     break;
