@@ -133,7 +133,7 @@ export function stageAwareSynthCommands(
     ...(options.expectedStackArtifactId
       ? [`test -f cdk.out/${shellQuote(options.expectedStackArtifactId)}.template.json`]
       : []),
-    'grep -q "aws:cloudformation:stack" cdk.out/manifest.json',
+    'grep -rq "aws:cloudformation:stack" cdk.out/manifest.json cdk.out/assembly-*/manifest.json 2>/dev/null || grep -rq "aws:cloudformation:stack" cdk.out/',
     validateStageAssembliesCommand(options.expectedStageAssemblyGlobs),
     publishCloudAssemblyFromCheckoutRootCommand(),
   ];
