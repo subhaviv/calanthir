@@ -16,6 +16,7 @@ import aws_cdk as cdk
 from enterprise_gateway.gateway_stack import EnterpriseGatewayStack
 from connectors.atlassian_stack import AtlassianConnectorStack
 from connectors.connector_auth_stack import ConnectorAuthStack
+from connectors.hcls_stack import HclsConnectorStack
 
 app = cdk.App()
 
@@ -62,6 +63,17 @@ ConnectorAuthStack(
     "ConnectorAuthStack",
     env=env,
     description="Shared connector authorize SPA (per-user 3LO consent) for the governance gateway - CDK",
+)
+
+# HCLS / PubMed connector (separate stack; references the core gateway). Fronts the
+# hosted Anthropic healthcare MCP servers (PubMed, Clinical Trials, ICD-10, NPI, CMS
+# Coverage) as governed gateway targets, shared across all LOBs. Static public https
+# endpoints → plain CfnGatewayTarget (no runtime, no OAuth). Deploy the gateway stack first.
+HclsConnectorStack(
+    app,
+    "HclsConnectorStack",
+    env=env,
+    description="Hosted HCLS / PubMed MCP servers as governed gateway targets - CDK",
 )
 
 app.synth()
