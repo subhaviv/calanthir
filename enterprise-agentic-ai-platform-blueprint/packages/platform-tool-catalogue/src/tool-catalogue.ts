@@ -43,7 +43,7 @@ export type ToolId = string; // branded string; keep simple for v1
  * workstream's Gateway policy document is built by union-ing the cedarPolicy
  * strings of every tool the workstream subscribed to.
  */
-export type ToolType = "lambda" | "agent-a2a" | "mcp-server";
+export type ToolType = "lambda" | "agent-a2a";
 
 export interface ToolSpec {
   readonly toolId: ToolId; // unique within catalogue; kebab-case pattern
@@ -63,31 +63,6 @@ export interface ToolSpec {
    * endpoint URL (must be HTTPS). When 'lambda', leave undefined.
    */
   readonly a2aEndpointUrl?: string;
-  /**
-   * MCP-server target — when toolType === 'mcp-server' this is the external
-   * MCP server's HTTPS endpoint, emitted (deploy-gated follow-up) as
-   * AWS::BedrockAgentCore::GatewayTarget TargetConfiguration.Mcp.McpServer.Endpoint.
-   * The gateway fronts this external MCP server directly (no proxy Lambda); the
-   * call still passes through the platform gateway, so Cedar authz + audit +
-   * interceptors apply. Required (and HTTPS) when toolType==='mcp-server';
-   * leave undefined for 'lambda' / 'agent-a2a'. For an mcp-server tool,
-   * `targetArn` is unused — set it to the sentinel 'mcp-server://<toolId>'.
-   */
-  readonly mcpEndpointUrl?: string;
-  /**
-   * MCP-server listing mode (maps to McpServer.ListingMode). 'DEFAULT' caches
-   * the server's tool list at the control plane (fast; good for stable 3rd-party
-   * servers); 'DYNAMIC' discovers tools live each listing. Defaults to 'DEFAULT'
-   * when omitted on an mcp-server tool. Invalid on other tool types.
-   */
-  readonly mcpListingMode?: "DEFAULT" | "DYNAMIC";
-  /**
-   * Optional outbound-auth credential-provider ARN for an mcp-server (or future
-   * authed external) target — an AgentCore Identity credential provider
-   * (API key / OAuth). Maps to GatewayTarget.CredentialProviderConfigurations.
-   * Omit for an unauthenticated public MCP server.
-   */
-  readonly outboundCredentialProviderArn?: string;
   /**
    * Phase Q (v0.6.0) — second-layer entitlement: the set of Cognito group
    * names whose JWTs are permitted to invoke this tool. Empty/undefined ⇒
@@ -151,86 +126,9 @@ export const PLATFORM_TOOL_CATALOGUE: Readonly<Record<ToolId, ToolSpec>> = {
     approvalStatus: "approved",
     inputSchema: { type: "object", properties: {} },
   },
-
-  // ── Shared hosted HCLS MCP servers (Anthropic-hosted; fronted through the
-  // platform gateway as governed MCP-server targets so Cedar authz + audit
-  // apply). toolType='mcp-server'; targetArn is an unused sentinel — the real
-  // endpoint is mcpEndpointUrl. Marked 'experimental' until the gateway-target
-  // emission (CfnGatewayTarget) is wired and deployed; the catalogue entry +
-  // Cedar are the SSOT, emission is the deploy-gated follow-up.
-  "tool-pubmed": {
-    toolId: "tool-pubmed",
-    toolType: "mcp-server",
-    targetArn: "mcp-server://tool-pubmed",
-    mcpEndpointUrl: "https://pubmed.mcp.claude.com/mcp",
-    mcpListingMode: "DEFAULT",
-    cedarPolicy:
-      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-pubmed");',
-    ownerTeam: "platform-ai",
-    costCentre: "platform",
-    description:
-      "PubMed biomedical literature search (hosted MCP). Public evidence tool — query by clinical concept, never patient identifiers. International.",
-    approvalStatus: "experimental",
-  },
-  "tool-clinical-trials": {
-    toolId: "tool-clinical-trials",
-    toolType: "mcp-server",
-    targetArn: "mcp-server://tool-clinical-trials",
-    mcpEndpointUrl: "https://hcls.mcp.claude.com/clinical_trials/mcp",
-    mcpListingMode: "DEFAULT",
-    cedarPolicy:
-      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-clinical-trials");',
-    ownerTeam: "platform-ai",
-    costCentre: "platform",
-    description:
-      "Clinical trials registry search (hosted MCP). Public evidence tool — query by condition/criteria, never patient identifiers. International.",
-    approvalStatus: "experimental",
-  },
-  "tool-icd10": {
-    toolId: "tool-icd10",
-    toolType: "mcp-server",
-    targetArn: "mcp-server://tool-icd10",
-    mcpEndpointUrl: "https://hcls.mcp.claude.com/icd10_codes/mcp",
-    mcpListingMode: "DEFAULT",
-    cedarPolicy:
-      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-icd10");',
-    ownerTeam: "platform-ai",
-    costCentre: "platform",
-    description:
-      "ICD-10 code lookup/validation (hosted MCP). US-centric (ICD-10-CM) — for coding/RCM use cases, not international clinical demos.",
-    approvalStatus: "experimental",
-  },
-  "tool-npi-registry": {
-    toolId: "tool-npi-registry",
-    toolType: "mcp-server",
-    targetArn: "mcp-server://tool-npi-registry",
-    mcpEndpointUrl: "https://hcls.mcp.claude.com/npi_registry/mcp",
-    mcpListingMode: "DEFAULT",
-    cedarPolicy:
-      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-npi-registry");',
-    ownerTeam: "platform-ai",
-    costCentre: "platform",
-    description:
-      "NPI provider registry lookup (hosted MCP). US-only (CMS NPI) — for US coding/RCM use cases.",
-    approvalStatus: "experimental",
-  },
-  "tool-cms-coverage": {
-    toolId: "tool-cms-coverage",
-    toolType: "mcp-server",
-    targetArn: "mcp-server://tool-cms-coverage",
-    mcpEndpointUrl: "https://hcls.mcp.claude.com/cms_coverage/mcp",
-    mcpListingMode: "DEFAULT",
-    cedarPolicy:
-      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-cms-coverage");',
-    ownerTeam: "platform-ai",
-    costCentre: "platform",
-    description:
-      "CMS coverage/policy lookup (hosted MCP). US-centric — for coding/PA/RCM use cases.",
-    approvalStatus: "experimental",
-  },
 };
 
-export const PLATFORM_TOOL_CATALOGUE_VERSION = "3";
+export const PLATFORM_TOOL_CATALOGUE_VERSION = "2";
 
 // Pattern matchers:
 const LAMBDA_ARN_WITH_ALIAS =
@@ -259,40 +157,8 @@ export function validateToolSpec(spec: ToolSpec): void {
         `Tool ${spec.toolId}: agent-a2a tools require a2aEndpointUrl starting with https://`,
       );
     }
-  } else if (toolType === "mcp-server") {
-    if (!spec.mcpEndpointUrl || !/^https:\/\//.test(spec.mcpEndpointUrl)) {
-      throw new Error(
-        `Tool ${spec.toolId}: mcp-server tools require mcpEndpointUrl starting with https:// (AgentCore McpServer.Endpoint pattern ^https://.*)`,
-      );
-    }
-    if (spec.a2aEndpointUrl) {
-      throw new Error(
-        `Tool ${spec.toolId}: a2aEndpointUrl is only valid when toolType='agent-a2a'`,
-      );
-    }
-    if (
-      spec.mcpListingMode &&
-      !["DEFAULT", "DYNAMIC"].includes(spec.mcpListingMode)
-    ) {
-      throw new Error(
-        `Tool ${spec.toolId}: mcpListingMode must be 'DEFAULT' or 'DYNAMIC'`,
-      );
-    }
   } else {
     throw new Error(`Tool ${spec.toolId}: unsupported toolType ${toolType}`);
-  }
-  // MCP-only fields must not appear on non-mcp-server tools.
-  if (toolType !== "mcp-server") {
-    if (spec.mcpEndpointUrl) {
-      throw new Error(
-        `Tool ${spec.toolId}: mcpEndpointUrl is only valid when toolType='mcp-server'`,
-      );
-    }
-    if (spec.mcpListingMode) {
-      throw new Error(
-        `Tool ${spec.toolId}: mcpListingMode is only valid when toolType='mcp-server'`,
-      );
-    }
   }
   if (spec.targetAccountId && !/^\d{12}$/.test(spec.targetAccountId)) {
     throw new Error(`Tool ${spec.toolId}: targetAccountId must be 12 digits`);
