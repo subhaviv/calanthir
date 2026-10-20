@@ -40,7 +40,6 @@ import { WorkloadNetworkStack } from "../apps/workload-account/lib/workload-netw
 import { WorkloadAppStack } from "../apps/workload-account/lib/workload-app-stack";
 import { PlatformPipelineStack } from "../pipelines/platform-pipeline-stack";
 import { WorkloadPipelineStack } from "../pipelines/workload-pipeline-stack";
-import { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";
 import { LobSourceBucket } from "../pipelines/lob-source-bucket-stack";
 import { S3WorkloadDeployPipelineStack } from "../pipelines/s3-workload-deploy-pipeline-stack";
 import type { GeneratedAgentInferenceInputs } from "../pipelines/workload-pipeline-stack";
@@ -1303,6 +1302,9 @@ switch (stage) {
   // is LEFT RUNNING in AWS — this only removes it from the CDK app, it does NOT
   // destroy anything. Uncomment + migrate to the LobSourceBucket + per-agent-folder
   // model (mirror the providers block below) when returning to payors.
+  // NOTE: the S3WorkloadPipelineStack class was removed as dead code on 2026-10-20
+  // (no live instantiation). To resume payors, restore it from git history or adopt
+  // the non-self-mutating S3WorkloadDeployPipelineStack used by providers below.
   //
   // new S3WorkloadPipelineStack(app, "aifactory-payors-S3WorkloadPipelineStack", {
   //   env: { account: "195698601974", region: deploymentRegion() },
