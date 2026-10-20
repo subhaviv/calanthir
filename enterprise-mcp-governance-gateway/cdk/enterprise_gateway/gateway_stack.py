@@ -33,6 +33,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_kms as kms,
     aws_lambda as lambda_,
+    aws_logs as logs,
     aws_secretsmanager as secretsmanager,
     aws_ssm as ssm,
 )
@@ -196,6 +197,17 @@ class EnterpriseGatewayStack(Stack):
         # deploy). Depending on the role construct pulls in its DefaultPolicy too.
         self.gateway.node.add_dependency(self.gateway_role)
         self._grant_gateway_invoke()
+
+        # 5b. Observability: deliver the gateway's APPLICATION_LOGS to CloudWatch via a
+        #     vended-logs delivery (PutDeliverySource -> PutDeliveryDestination ->
+        #     CreateDelivery, the same wiring the console's "Log delivery" pane does).
+        #     This captures the gateway's own tool execution + responses + ERRORS —
+        #     including MCP-server target discovery/handshake results — which the
+        #     data-plane interceptor Lambdas do NOT see (discovery is control-plane).
+        #     Needed to diagnose why external MCP-server targets' tools weren't
+        #     surfacing in tools/list. The log group name MUST be under
+        #     /aws/vendedlogs/ for the logs-delivery service to write to it.
+        self._wire_gateway_log_delivery()
 
         # 6. Gateway targets (DocsAPI, DatabaseAPI). Registering these populates the
         #    policy engine's Cedar schema, so the policies (step 7) depend on them.
@@ -697,6 +709,53 @@ class EnterpriseGatewayStack(Stack):
             ),
             exception_level="DEBUG",
         )
+
+    def _wire_gateway_log_delivery(self) -> None:
+        """Deliver the gateway's application logs to a CloudWatch log group.
+
+        AgentCore gateways do not auto-create a log group; service-provided logs
+        require a CloudWatch Logs *delivery* (the vended-logs path). We create:
+          * a CMK-encrypted log group under /aws/vendedlogs/ (required prefix),
+          * a DeliverySource bound to the gateway ARN (logType APPLICATION_LOGS),
+          * a DeliveryDestination pointing at the log group,
+          * a Delivery joining them.
+        The gateway role already has the CMK encrypt/decrypt grant; the logs
+        service writes via the vended-logs resource policy AWS manages for
+        /aws/vendedlogs/ groups.
+        """
+        log_group = logs.LogGroup(
+            self,
+            "GatewayAppLogs",
+            log_group_name=f"/aws/vendedlogs/bedrock-agentcore/gateway/{GATEWAY_NAME}",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+        source = logs.CfnDeliverySource(
+            self,
+            "GatewayLogSource",
+            name=f"{GATEWAY_NAME}-app-logs",
+            resource_arn=self.gateway.attr_gateway_arn,
+            log_type="APPLICATION_LOGS",
+        )
+
+        destination = logs.CfnDeliveryDestination(
+            self,
+            "GatewayLogDestination",
+            name=f"{GATEWAY_NAME}-cwl",
+            destination_resource_arn=log_group.log_group_arn,
+        )
+
+        delivery = logs.CfnDelivery(
+            self,
+            "GatewayLogDelivery",
+            delivery_source_name=source.name,
+            delivery_destination_arn=destination.attr_arn,
+        )
+        delivery.add_dependency(source)
+        delivery.add_dependency(destination)
+
+        self.gateway_log_group = log_group
 
     def _grant_gateway_invoke(self) -> None:
         """Permit ONLY this gateway to invoke the 4 Lambdas (confused-deputy guard).
