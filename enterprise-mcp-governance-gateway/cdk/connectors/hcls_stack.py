@@ -133,16 +133,13 @@ class HclsConnectorStack(Stack):
                     mcp=agentcore.CfnGatewayTarget.McpTargetConfigurationProperty(
                         mcp_server=agentcore.CfnGatewayTarget.McpServerTargetConfigurationProperty(
                             endpoint=endpoint,
-                            # DYNAMIC: tools are fetched LIVE at tools/list time (served on a
-                            # separate page), under the calling user's identity. DEFAULT mode
-                            # caches at the control plane via (implicit/explicit) sync, but in
-                            # this gateway the cached HCLS tools did not surface in the unified
-                            # tools/list even after SynchronizeGatewayTargets — DYNAMIC makes
-                            # them appear reliably. Tradeoff (acceptable for these public,
-                            # no-auth servers): DYNAMIC is not interoperable with semantic tool
-                            # search or outbound 3LO. Governance (JWT auth, audit, interceptors)
-                            # still applies on every call.
-                            listing_mode="DYNAMIC",
+                            # DEFAULT: tools are discovered + cached via synchronization
+                            # (implicit on create/update, explicit via SynchronizeGatewayTargets).
+                            # This works now that the gateway's supportedVersions include
+                            # 2025-06-18 (the version these hosted servers speak) — the earlier
+                            # empty tools/list was that version gap, NOT the listing mode.
+                            # DEFAULT (vs DYNAMIC) keeps semantic tool search available.
+                            listing_mode="DEFAULT",
                         ),
                     ),
                 ),
