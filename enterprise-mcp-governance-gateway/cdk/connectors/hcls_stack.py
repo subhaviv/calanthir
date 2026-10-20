@@ -60,9 +60,9 @@ def _t(name, desc, props, required):
             "inputSchema": {"type": "object", "properties": props, "required": required}}
 
 
-# One hosted MCP server = one gateway target. `listing_mode='DEFAULT'` caches the
-# server's tool list at the control plane (fast; fine for stable third-party
-# servers). `international` is documentation only — it records whether the tool is
+# One hosted MCP server = one gateway target. `listing_mode='DYNAMIC'` fetches the
+# server's tool list LIVE at tools/list time (DEFAULT's control-plane cache did not
+# surface these tools in the unified list even after explicit sync). `international` is documentation only — it records whether the tool is
 # safe for a non-US clinical demo (PubMed/Trials) or US-coding-specific (ICD-10/NPI/CMS).
 HCLS_TARGETS = [
     {
@@ -133,7 +133,16 @@ class HclsConnectorStack(Stack):
                     mcp=agentcore.CfnGatewayTarget.McpTargetConfigurationProperty(
                         mcp_server=agentcore.CfnGatewayTarget.McpServerTargetConfigurationProperty(
                             endpoint=endpoint,
-                            listing_mode="DEFAULT",
+                            # DYNAMIC: tools are fetched LIVE at tools/list time (served on a
+                            # separate page), under the calling user's identity. DEFAULT mode
+                            # caches at the control plane via (implicit/explicit) sync, but in
+                            # this gateway the cached HCLS tools did not surface in the unified
+                            # tools/list even after SynchronizeGatewayTargets — DYNAMIC makes
+                            # them appear reliably. Tradeoff (acceptable for these public,
+                            # no-auth servers): DYNAMIC is not interoperable with semantic tool
+                            # search or outbound 3LO. Governance (JWT auth, audit, interceptors)
+                            # still applies on every call.
+                            listing_mode="DYNAMIC",
                         ),
                     ),
                 ),
