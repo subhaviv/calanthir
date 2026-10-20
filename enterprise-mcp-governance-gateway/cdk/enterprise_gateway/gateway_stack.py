@@ -685,10 +685,14 @@ class EnterpriseGatewayStack(Stack):
             ),
             # MCP protocol versions. 2025-11-25 is required for OAuth URL-elicitation
             # (the per-user 3LO consent used by connector targets like Atlassian);
+            # 2025-06-18 is required for the hosted HCLS/PubMed MCP-server targets,
+            # which advertise protocolVersion 2025-06-18 — without it the gateway and
+            # those servers share no common version, the forwarded handshake returns
+            # nothing, and their tools/list comes back empty (symptom seen live);
             # 2025-03-26 retained for backward compatibility with older MCP clients.
             protocol_configuration=agentcore.CfnGateway.GatewayProtocolConfigurationProperty(
                 mcp=agentcore.CfnGateway.MCPGatewayConfigurationProperty(
-                    supported_versions=["2025-11-25", "2025-03-26"],
+                    supported_versions=["2025-11-25", "2025-06-18", "2025-03-26"],
                 ),
             ),
             exception_level="DEBUG",
