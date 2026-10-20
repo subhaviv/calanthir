@@ -41,6 +41,8 @@ import { WorkloadAppStack } from "../apps/workload-account/lib/workload-app-stac
 import { PlatformPipelineStack } from "../pipelines/platform-pipeline-stack";
 import { WorkloadPipelineStack } from "../pipelines/workload-pipeline-stack";
 import { S3WorkloadPipelineStack } from "../pipelines/s3-workload-pipeline-stack";
+import { LobSourceBucket } from "../pipelines/lob-source-bucket-stack";
+import { S3WorkloadDeployPipelineStack } from "../pipelines/s3-workload-deploy-pipeline-stack";
 import type { GeneratedAgentInferenceInputs } from "../pipelines/workload-pipeline-stack";
 import { D03PlatformCoreStack } from "../apps/platform-account/lib/d03-platform-core-stack";
 import { parseGaRegistryConsumerContext } from "@agenticai/agent-registry";
@@ -1294,28 +1296,73 @@ switch (stage) {
       });
     }
 
-  // ── LOB: payors — workload pipeline (Step B3) ─────────────────────────
-  // Added by onboard-lob.sh. Bootstrap once (run as platform account 195698601974):
-  //   npx cdk deploy \
-  //     "aifactory-payors-S3WorkloadPipelineStack" \
-  //     --context stage=pipeline --context agenticai/pipelineSelection=workload \
-  //     --require-approval never
-  // After bootstrap, all workload changes trigger via S3 upload from the LOB CI job.
-  new S3WorkloadPipelineStack(app, "aifactory-payors-S3WorkloadPipelineStack", {
+  // ── LOB: payors — PARKED (2026-10-20) ─────────────────────────────────
+  // Temporarily removed from synth while providers is finished. This is the OLD
+  // pre-refactor model (no LobSourceBucket, no per-agent stack name, flat
+  // sourceObjectKey). The deployed stack `aifactory-payors-S3WorkloadPipelineStack`
+  // is LEFT RUNNING in AWS — this only removes it from the CDK app, it does NOT
+  // destroy anything. Uncomment + migrate to the LobSourceBucket + per-agent-folder
+  // model (mirror the providers block below) when returning to payors.
+  //
+  // new S3WorkloadPipelineStack(app, "aifactory-payors-S3WorkloadPipelineStack", {
+  //   env: { account: "195698601974", region: deploymentRegion() },
+  //   sourceObjectKey: "workload-source.zip",
+  //   tenantId: "payors",
+  //   agentId: "primary",
+  //   applicationId: "aifactory-payors",
+  //   costCentre: "payors",
+  //   workloadNonprodEnv: { account: "172873868821", region: "us-east-1" },
+  //   workloadProdEnv:    { account: "172873868821", region: "us-east-1" },
+  //   workloadNonprodAvailabilityZones: ["us-east-1a","us-east-1b"],
+  //   workloadProdAvailabilityZones:    ["us-east-1a","us-east-1b"],
+  //   inferenceM2mSecretArn: String(app.node.tryGetContext("agenticai/inferenceM2mSecretArn") ?? ""),
+  //   inferenceGatewayUrl:   String(app.node.tryGetContext("agenticai/inferenceGatewayUrl") ?? ""),
+  //   inferenceModelId:      String(app.node.tryGetContext("agenticai/inferenceModelId") ?? ""),
+  //   synthContext: sharedSynthContext,
+  // });
+
+  // ── LOB: providers — tenant source bucket (LEVEL 2, once per LOB) ─────
+  // Separate LOB, SHARED workload account (172873868821) with payors. The tenant
+  // bucket is created HERE at LOB-onboard; each agent writes to its OWN prefix
+  // (<agentId>/workload-source.zip). CI uses STATIC ACCESS KEYS (no OIDC), so the
+  // principal is the CI USER. Deploy once:
+  //   npx cdk deploy "aifactory-providers-LobSourceBucket" --require-approval never
+  new LobSourceBucket(app, "aifactory-providers-LobSourceBucket", {
     env: { account: "195698601974", region: deploymentRegion() },
-    sourceObjectKey: "workload-source.zip",
-    tenantId: "payors",
-    agentId: "primary",
-    applicationId: "aifactory-payors",
-    costCentre: "payors",
+    tenantId: "providers",
+    ciRunnerArn: "arn:aws:iam::172873868821:user/agenticai-ci-runner-providers",
+  });
+
+  const providersSourceBucketName = "agenticai-pipeline-source-providers";
+
+  // ── LOB: providers — agent pipeline (LEVEL 3, per agent) ──────────────
+  // Non-self-mutating deploy pipeline (S3WorkloadDeployPipelineStack): the LOB's
+  // standalone workload app does NOT contain this pipeline, so the self-mutating
+  // CDK-Pipelines variant (S3WorkloadPipelineStack) cannot be used here. Imports the
+  // tenant bucket by name; reads its OWN prefix. Bootstrap once (platform account):
+  //   npx cdk deploy "aifactory-providers-patient-journey-S3WorkloadPipelineStack" \
+  //     --context stage=pipeline --context agenticai/pipelineSelection=workload \
+  //     --context agenticai/defaultRegion=us-east-1 --require-approval never
+  new S3WorkloadDeployPipelineStack(app, "aifactory-providers-patient-journey-S3WorkloadPipelineStack", {
+    env: { account: "195698601974", region: deploymentRegion() },
+    sourceBucketName: providersSourceBucketName,
+    sourceObjectKey: "patient-journey/workload-source.zip",
+    tenantId: "providers",
+    agentId: "patient-journey",
+    costCentre: "providers",
     workloadNonprodEnv: { account: "172873868821", region: "us-east-1" },
     workloadProdEnv:    { account: "172873868821", region: "us-east-1" },
     workloadNonprodAvailabilityZones: ["us-east-1a","us-east-1b"],
     workloadProdAvailabilityZones:    ["us-east-1a","us-east-1b"],
-    inferenceM2mSecretArn: String(app.node.tryGetContext("agenticai/inferenceM2mSecretArn") ?? ""),
-    inferenceGatewayUrl:   String(app.node.tryGetContext("agenticai/inferenceGatewayUrl") ?? ""),
-    inferenceModelId:      String(app.node.tryGetContext("agenticai/inferenceModelId") ?? ""),
-    synthContext: sharedSynthContext,
+    synthContext: {
+      ...sharedSynthContext,
+      "agenticai/deployWorkloadApp": "true",
+      "agenticai/auditOamSinkArn": "arn:aws:oam:us-east-1:195698601974:sink/e811f3e7-75be-47fd-ae90-452064c75636",
+      "agenticai/inferenceM2mSecretArn": String(app.node.tryGetContext("agenticai/inferenceM2mSecretArn") ?? ""),
+      "agenticai/inferenceGatewayUrl":   String(app.node.tryGetContext("agenticai/inferenceGatewayUrl") ?? ""),
+      "agenticai/inferenceModelId":      String(app.node.tryGetContext("agenticai/inferenceModelId") ?? ""),
+      "agenticai/agentImageUri":         String(app.node.tryGetContext("agenticai/agentImageUri") ?? ""),
+    },
   });
     break;
   }

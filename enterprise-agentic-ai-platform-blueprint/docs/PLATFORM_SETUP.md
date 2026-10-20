@@ -1,5 +1,9 @@
 # Platform Setup Guide
 
+> 🗺️ **New here? Read `ONBOARDING_JOURNEY.md` first** — the one-page two-team map of the
+> whole flow (platform bootstrap → onboard LOB → onboard agent). This guide is the
+> platform team's detailed procedures for Part A + the platform side of Part B.
+
 > **Audience: platform team.**
 > This guide is performed once per AWS Organization. It deploys the shared infrastructure that all LOBs consume — inference gateway, GA registry, guardrails, Cognito M2M pool, and the pipelines that deploy workload accounts.
 
@@ -126,32 +130,45 @@ AWS_PROFILE=agentops-consumer npx cdk bootstrap \
   --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
 ```
 
-### Step B2 — Create the S3 Source Bucket
+### Step B2 — Create the S3 Source Bucket (the `LobSourceBucket` stack)
 
-The LOB's CI job uploads a source zip here on every merge to `main`. CodePipeline triggers automatically off the new S3 object version.
+The LOB's CI job uploads a source zip here on every merge to `main`. CodePipeline triggers automatically off the new S3 object version. The bucket is **per-tenant** and created **once at LOB-onboard**; every agent in the tenant later uploads to its OWN prefix (`<agentId>/workload-source.zip`).
 
-Add to `bin/agentic-ai-platform.ts`:
+A dedicated stack already exists — `pipelines/lob-source-bucket-stack.ts`. In `bin/agentic-ai-platform.ts`, instantiate it with the LOB's CI **user** ARN (from `create-iam-users.sh` — access-key model, GitLab has no OIDC):
 
 ```typescript
-import { Bucket, BucketEncryption, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
-import { ArnPrincipal, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { LobSourceBucket } from "../pipelines/lob-source-bucket-stack";
 
-const lobSourceBucket = new Bucket(this, "LobSourceBucket-YOUR_TENANT", {
-  bucketName: `agenticai-pipeline-source-YOUR_TENANT`,
-  versioned: true,  // required by CodePipelineSource.s3()
-  encryption: BucketEncryption.S3_MANAGED,
-  blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+new LobSourceBucket(app, "aifactory-YOUR_TENANT-LobSourceBucket", {
+  env: { account: "195698601974", region: deploymentRegion() },
+  tenantId: "YOUR_TENANT",
+  ciRunnerArn: "arn:aws:iam::YOUR_WORKLOAD_ACCOUNT_ID:user/agenticai-ci-runner-YOUR_TENANT",
 });
-
-// Allow the LOB's GitLab CI runner to upload
-lobSourceBucket.addToResourcePolicy(new PolicyStatement({
-  principals: [new ArnPrincipal("arn:aws:iam::YOUR_WORKLOAD_ACCOUNT_ID:role/YOUR_CI_RUNNER_ROLE")],
-  actions: ["s3:PutObject", "s3:GetBucketVersioning"],
-  resources: [lobSourceBucket.bucketArn, `${lobSourceBucket.bucketArn}/*`],
-}));
 ```
 
-The LOB team provides their CI runner role ARN. The platform team provides the bucket name back to the LOB team.
+It creates `agenticai-pipeline-source-YOUR_TENANT` (versioned, BLOCK_ALL, SSE) and grants the CI user `s3:PutObject` on `/*`. Deploy it once:
+
+```bash
+AWS_PROFILE=agentops-publisher npx cdk deploy \
+  "aifactory-YOUR_TENANT-LobSourceBucket" \
+  --context stage=pipeline \
+  --context agenticai/pipelineSelection=workload \
+  --context agenticai/defaultRegion=us-east-1 \
+  --require-approval never
+```
+
+> ⚠️ **`--context stage=pipeline` is REQUIRED on every `cdk deploy`/`list`/`synth`** against
+> this app, even when targeting a single stack — the app throws `Missing required CDK
+> context 'stage'` without it. This is the #1 first-run failure.
+
+The LOB team provides their CI runner **user** ARN (from `create-iam-users.sh`). The
+platform team provides the bucket name back to the LOB team.
+
+> In practice the per-tenant bucket is created by the FIRST agent's
+> `S3WorkloadPipelineStack` (it provisions `agenticai-pipeline-source-<tenant>` when no
+> `sourceBucket` is passed). Declare a standalone bucket only if you want to pre-create
+> it and pass it to every agent's pipeline stack. Either way the policy principal is the
+> CI **user** ARN above.
 
 Commit and push — the platform pipeline deploys the bucket.
 
@@ -188,8 +205,10 @@ Bootstrap the pipeline stack once:
 
 ```bash
 AWS_PROFILE=agentops-publisher npx cdk deploy \
-  "aifactory-YOUR_TENANT-S3WorkloadPipelineStack" \
+  "aifactory-YOUR_TENANT-YOUR_AGENTID-S3WorkloadPipelineStack" \
+  --context stage=pipeline \
   --context agenticai/pipelineSelection=workload \
+  --context agenticai/defaultRegion=us-east-1 \
   --require-approval never
 ```
 
@@ -207,14 +226,14 @@ Source (S3 object version) → Synth → UpdatePipeline (self-mutate) → Assets
 
 Give the LOB team:
 
-1. The **workload blueprint repo**: `git@ssh.gitlab.aws.dev:subhaviv/agentops-blueprint.git` (they clone this as their LOB repo starting point — see `WORKLOAD_SETUP.md` Step 1)
+1. The **workload blueprint repo**: `git@ssh.gitlab.aws.dev:subhaviv/agentops-blueprint.git` (they clone this as their LOB repo starting point — see `docs/WORKLOAD_SETUP.md` *in that repo*, Step 1)
 2. The **S3 bucket name**: `agenticai-pipeline-source-YOUR_TENANT`
 3. The **ECR repo**: `YOUR_WORKLOAD_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/agenticai-nonprod-YOUR_TENANT-primary`
 4. The **inference values** they need in their `cdk.context.json`:
    - `agenticai/inferenceM2mSecretArn`
    - `agenticai/inferenceGatewayUrl`
    - `agenticai/inferenceModelId`
-5. A pointer to `WORKLOAD_SETUP.md`
+5. A pointer to `docs/WORKLOAD_SETUP.md` in the blueprint repo they cloned (the canonical LOB guide)
 
 The LOB team takes it from here. The platform team is not in the loop for agent deployments.
 
@@ -303,6 +322,7 @@ In nonprod the registry auto-approves records. In prod a curator must approve be
 | `cdk deploy` runs but pipeline ignores the change | Direct deploy bypasses self-mutation | Always git push — never direct `cdk deploy` after bootstrap |
 | S3 pipeline does not trigger after LOB merge | Bucket versioning disabled or wrong object key | Verify `aws s3api get-bucket-versioning`; confirm `sourceObjectKey` matches the CI job |
 | S3 `cp` denied in LOB CI | CI runner role missing `s3:PutObject` | Add the grant to the bucket resource policy in Step B2 |
+| `Missing required CDK context 'stage'` on deploy | Forgot `--context stage=pipeline` | Add it to EVERY cdk deploy/list/synth, even single-stack |
 | S3 pipeline self-mutates but loses S3 source | Bucket or key changed post-bootstrap | Re-bootstrap once with `cdk deploy` when changing `sourceBucket` or `sourceObjectKey` |
 | Registry record appears as tool not agent | `RecordType: "CUSTOM"` | Use `RecordType: "AGENT"` with `Descriptors.A2aAgentCard` |
 | CFN 409 on registry update | `RecordType` cannot be updated in-place | Delete via Cloud Control API, then push to recreate |

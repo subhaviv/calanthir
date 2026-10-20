@@ -149,6 +149,12 @@ export interface S3WorkloadPipelineStackProps extends StackProps {
    */
   readonly sourceBucket?: IBucket;
   /**
+   * Name of an existing tenant source bucket to import (preferred for multi-agent
+   * tenants — created once at LOB-onboard by LobSourceBucket). Imported within this
+   * stack's scope. Ignored if `sourceBucket` is passed.
+   */
+  readonly sourceBucketName?: string;
+  /**
    * S3 object key of the source zip within the bucket.
    * Example: "workload-source.zip"
    */
@@ -319,8 +325,18 @@ export class S3WorkloadPipelineStack extends Stack {
       resourceTags,
     );
 
-    // S3 source bucket — created here if not passed in externally.
-    const sourceBucket: IBucket = props.sourceBucket ?? (() => {
+    // S3 source bucket. PREFERRED: pass the tenant's shared bucket NAME
+    // (`sourceBucketName`, created once at LOB-onboard via LobSourceBucket) so every
+    // agent in the tenant uploads to its OWN key/prefix
+    // (sourceObjectKey = "<agentId>/workload-source.zip") in the one bucket. It is
+    // imported HERE, inside the stack scope (fromBucketName requires a Stack scope).
+    // FALLBACK: if neither sourceBucket nor sourceBucketName is given, create it
+    // (legacy single-agent path).
+    const sourceBucket: IBucket =
+      props.sourceBucket ??
+      (props.sourceBucketName
+        ? Bucket.fromBucketName(this, "ImportedSourceBucket", props.sourceBucketName)
+        : (() => {
       const bucket = new Bucket(this, "SourceBucket", {
         bucketName: `agenticai-pipeline-source-${props.tenantId}`,
         versioned: true,
@@ -329,6 +345,8 @@ export class S3WorkloadPipelineStack extends Stack {
         removalPolicy: RemovalPolicy.RETAIN,
         enforceSSL: true,
       });
+      // ciRunnerArn is the LOB CI principal — an IAM USER in the access-key model
+      // (GitLab has no OIDC), or a role if the tenant uses assume-role.
       if (props.ciRunnerRoleArn) {
         bucket.addToResourcePolicy(new PolicyStatement({
           principals: [new ArnPrincipal(props.ciRunnerRoleArn)],
@@ -337,7 +355,7 @@ export class S3WorkloadPipelineStack extends Stack {
         }));
       }
       return bucket;
-    })();
+    })());
 
     const source = CodePipelineSource.s3(
       sourceBucket,
