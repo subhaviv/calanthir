@@ -115,8 +115,6 @@ class HclsConnectorStack(Stack):
             self, "/enterprise-mcp-gateway/gateway/id")
         gateway_arn = ssm.StringParameter.value_for_string_parameter(
             self, "/enterprise-mcp-gateway/gateway/arn")
-        policy_engine_id = ssm.StringParameter.value_for_string_parameter(
-            self, "/enterprise-mcp-gateway/policy-engine/id")
 
         for spec in selected:
             endpoint = spec["endpoint"]
@@ -144,25 +142,26 @@ class HclsConnectorStack(Stack):
                 # server later requires a key.
             )
 
-            # Unconditional READ permit for every authenticated gateway user — these are
-            # public lookups. Mirrors the catalogue entry's Cedar. The gateway still
-            # authenticates + audits + interceptor-scans every call; PHI-in-query is
-            # prevented by the agent's skill instructions, not this policy.
-            statement = (
-                "permit(\n"
-                "  principal is AgentCore::OAuthUser,\n"
-                f'  action == AgentCore::Action::"{spec["name"]}___query",\n'
-                f'  resource == AgentCore::Gateway::"{gateway_arn}"\n'
-                ");"
-            )
-            pol = agentcore.CfnPolicy(
-                self, f"Policy{spec['name']}",
-                policy_engine_id=policy_engine_id,
-                name=f"hcls_{spec['tool_id'].replace('-', '_')}",
-                definition={"cedar": {"statement": statement}},
-                validation_mode="IGNORE_ALL_FINDINGS",  # unconditional read permit is intentional
-            )
-            pol.node.add_dependency(target)
+            # Cedar policies are NOT created here. The AgentCore policy engine
+            # validates each permit's action against the target's REAL tool names
+            # (action == AgentCore::Action::"<TargetName>___<tool>") and rejects an
+            # unknown action ("unable to find an applicable action"). With
+            # listing_mode='DEFAULT' (dynamic discovery) the tool names are not known
+            # at synth time, so a per-tool permit cannot be written yet — a guessed
+            # action (e.g. "<Target>___query") fails CREATE with a parse/validation
+            # error. The permits are a FOLLOW-UP once the real tool names are known:
+            # deploy the target, run `aws bedrock-agentcore-control list-gateway-targets`
+            # / inspect the discovered tools, then add one
+            #   permit(principal is AgentCore::OAuthUser,
+            #          action == AgentCore::Action::"<TargetName>___<tool>",
+            #          resource == AgentCore::Gateway::"<gateway_arn>");
+            # CfnPolicy per tool (mirroring policies/allow-docs-read.cedar).
+            #
+            # NOTE: if the gateway's policy engine is in ENFORCE mode, a target with no
+            # permits is DENIED by default (safe). If it is LOG_ONLY, every call is
+            # permitted silently until the permits land — add the policies before
+            # relying on governance for these tools.
+            _ = gateway_arn  # referenced by the follow-up policies; kept for clarity
 
             CfnOutput(self, f"{spec['name']}Endpoint", value=endpoint,
                       description=f"{spec['name']} hosted MCP endpoint fronted by the gateway")
