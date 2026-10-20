@@ -710,6 +710,21 @@ export class D03WorkstreamRuntimeMemoryStack extends Stack {
     const base = `${props.envName}-${props.tenantId}-${props.agentId}`;
     // AgentCore Runtime/Memory names use the [A-Za-z][A-Za-z0-9_]* charset —
     // hyphens are invalid — so the hyphenated base is translated to underscores.
+    //
+    // NOTE (2026-10-20): the `AgenticAI_D03_<...>_runtime` scheme (14-char prefix +
+    // suffix) can exceed the 48-char AgentCore limit for a long env/tenant/agent, and
+    // the guard below correctly throws at synth when it does. We deliberately did NOT
+    // shorten the scheme here, because this is the PLATFORM team's own provisioning
+    // path and the name is a governance-contract identity: it is asserted verbatim in
+    // the phase-23 conformance test and reused to derive the runtime/memory/
+    // workload-identity/inference-credential-provider names and their IAM-policy ARNs
+    // (roles stack, pipeline stack). Renaming it is a cross-cutting change with
+    // governance-gate blast radius, and memory is stateful so a rename orphans it.
+    // LOB workloads do NOT deploy this stack — they clone the agentops-blueprint
+    // template, where the runtime name IS shortened (drop agenticai_/_runtime, abbrev
+    // env) + synth-guarded. So the real tenant path is already safe; if the platform
+    // team ever needs a long-named demo agent, shorten the prefix across ALL derived
+    // names + ARNs + phase-23 in one atomic change, or keep it under 48.
     const underscoreBase = base.replace(/-/g, "_");
     const runtimeName = `AgenticAI_D03_${underscoreBase}_runtime`;
     const memoryName = `AgenticAI_D03_${underscoreBase}_memory`;
