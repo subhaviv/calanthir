@@ -483,6 +483,9 @@ switch (stage) {
         registerHclsTools:
           app.node.tryGetContext("agenticai/registerHclsTools") === true ||
           app.node.tryGetContext("agenticai/registerHclsTools") === "true",
+        registerEhrTool:
+          app.node.tryGetContext("agenticai/registerEhrTool") === true ||
+          app.node.tryGetContext("agenticai/registerEhrTool") === "true",
       });
       const inferenceGatewayStack = new InferenceGatewayStack(
         app,

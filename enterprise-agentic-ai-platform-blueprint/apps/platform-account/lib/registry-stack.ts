@@ -73,6 +73,22 @@ export interface RegistryStackProps extends StackProps {
    * Pass via context key `agenticai/registerHclsTools=true`.
    */
   readonly registerHclsTools?: boolean;
+
+  /**
+   * When true, register the governed EHR tool (EhrAPI) as a CUSTOM GA registry
+   * record. Kept SEPARATE from registerHclsTools on purpose: unlike the public
+   * reference servers, the EHR tool is a VPC-attached Lambda target that returns
+   * clinical PHI and is restricted to the `clinical-staff` Cognito group by a
+   * default-deny Cedar policy on the gateway. Broadly advertising a PHI tool is a
+   * deliberate governance decision, so it gets its own opt-in flag.
+   *
+   * The record carries NO PHI and does NOT bypass the gateway's clinical-staff
+   * permit (that enforces at call time regardless); it only makes the tool
+   * discoverable/auditable in the registry.
+   *
+   * Pass via context key `agenticai/registerEhrTool=true`.
+   */
+  readonly registerEhrTool?: boolean;
 }
 
 export class RegistryStack extends Stack {
@@ -460,6 +476,112 @@ export class RegistryStack extends Stack {
           description: `GA Registry record ID for the ${target.displayName} HCLS tool.`,
         });
       }
+    }
+
+    // ---- EHR tool (EhrAPI) — CUSTOM lambda record, clinical-staff restricted --
+    //
+    // Unlike the HCLS reference servers, EhrAPI is a VPC-attached Lambda target
+    // (lambdas/tool-targets/ehr-server) fronting the private HAPI FHIR EHR. Its
+    // two tools return clinical PHI, so the gateway restricts them to the
+    // `clinical-staff` Cognito group via a DEFAULT-DENY Cedar policy
+    // (policies/ehr-clinical-staff-only.cedar). This record makes the tool
+    // DISCOVERABLE/auditable in the GA registry; it carries no PHI and does not
+    // bypass that permit — enforcement stays on the gateway at call time.
+    //
+    // target.type is "lambda" here (matching the real target shape), with the
+    // clinical-staff entitlement reflected in authorization.allowedGroups.
+    if (props.registerEhrTool) {
+      const ehrTools: ReadonlyArray<{ name: string; description: string }> = [
+        {
+          name: "ehr_fhir_lookup",
+          description:
+            "Look up a patient's FHIR record (demographics + recent Observations) from the governed EHR. Clinical PHI — clinical-staff only.",
+        },
+        {
+          name: "imaging_lookup",
+          description:
+            "Look up a patient's imaging studies (FHIR ImagingStudy) from the governed EHR. Clinical PHI — clinical-staff only.",
+        },
+      ];
+
+      const ehrDescription =
+        "Governed EHR access (HAPI FHIR) via a VPC-attached Lambda target. Returns clinical PHI; restricted to the clinical-staff group by default-deny Cedar on the enterprise governance gateway.";
+
+      const ehrGovernance = {
+        schemaVersion: "agenticai.tool-governance/1.0",
+        toolId: "tool-ehr-fhir",
+        description: ehrDescription,
+        desiredApprovalStatus: "approved",
+        target: {
+          // Real target shape: a VPC-attached Lambda fronting the private EHR.
+          type: "lambda",
+          lambdaLogicalKey: "ehr_target",
+          sourceDir: "lambdas/tool-targets/ehr-server",
+          gatewayStack: "enterprise-mcp-governance-gateway/EnterpriseMcpGatewayStack",
+          vpcAttached: true,
+        },
+        mcp: {
+          // Tools are namespaced EhrAPI___<tool> on the gateway.
+          server: "EhrAPI",
+          tools: ehrTools.map((t) => ({
+            toolName: `EhrAPI___${t.name}`,
+            description: t.description,
+          })),
+        },
+        authorization: {
+          // Default-deny; permitted ONLY for the clinical-staff group (mirrors
+          // the live Cedar in policies/ehr-clinical-staff-only.cedar).
+          defaultDecision: "DENY",
+          allowedGroups: ["clinical-staff"],
+          allowedSubjects: [],
+          readOnly: true,
+          dataClassification: "PHI",
+          entitlement:
+            "cognito:groups must contain 'clinical-staff'; enforced by gateway Cedar.",
+        },
+        ownership: {
+          ownerTeam: "platform",
+          costCentre: props.costCentre,
+        },
+        metadata: {
+          international: false,
+          hostedBy: "self-hosted-hapi-fhir-ehr",
+          phi: true,
+        },
+      };
+
+      const ehrRecord = new CfnResource(this, "EhrToolRecord-tool-ehr-fhir", {
+        type: "AWS::AgentRegistry::RegistryRecord",
+        properties: {
+          RegistryId: this.gaRegistry.registryId,
+          Name: "tool-ehr-fhir",
+          DisplayName: "EhrAPI",
+          Description: ehrDescription,
+          RecordType: "CUSTOM",
+          RecordVersion: "1.0.0",
+          Descriptors: {
+            Custom: {
+              Data: JSON.stringify(ehrGovernance),
+            },
+          },
+          Tags: [
+            { Key: "application-id", Value: props.applicationId },
+            { Key: "agent-id", Value: "ehr-tool" },
+            { Key: "tenant-id", Value: "platform" },
+            { Key: "cost-centre", Value: props.costCentre },
+            { Key: "environment", Value: props.envName },
+            { Key: "owner-team", Value: "platform" },
+            { Key: "data-classification", Value: "phi" },
+          ],
+        },
+      });
+      ehrRecord.addDependsOn(this.gaRegistry.registry);
+      ehrRecord.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
+
+      new CfnOutput(this, "EhrToolRecordId-tool-ehr-fhir", {
+        value: ehrRecord.getAtt("RecordId").toString(),
+        description: "GA Registry record ID for the EhrAPI (clinical-staff) tool.",
+      });
     }
   }
 }
