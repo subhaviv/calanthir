@@ -52,6 +52,27 @@ export interface RegistryStackProps extends StackProps {
    * Omit until the Halo workload stack is deployed and the endpoint is known.
    */
   readonly haloPatientJourneyA2aEndpointUrl?: string;
+
+  /**
+   * When true, publish the 5 hosted HCLS / PubMed MCP tools as discoverable
+   * `CUSTOM` governance records in the GA registry (auto-approves in nonprod;
+   * a curator approves in prod).
+   *
+   * These tools are LIVE on the enterprise governance gateway
+   * (`enterprise-mcp-governance-gateway`, HclsConnectorStack) — one governed
+   * MCP-server target per server, with a Cedar read permit per tool. That
+   * gateway is the source of truth; these registry records only make the tools
+   * DISCOVERABLE in the GA registry and do NOT re-define or re-govern them.
+   *
+   * Unlike catalogue (Lambda-target) tools, these have NO Lambda alias — the
+   * target is the static gateway MCP endpoint — so they are hand-written here
+   * rather than emitted from PLATFORM_TOOL_CATALOGUE (which assumes a Lambda
+   * `:PROD` alias and is asserted by phase-22 conformance). Keep the endpoints
+   * and tool lists in sync with HclsConnectorStack's HCLS_TARGETS.
+   *
+   * Pass via context key `agenticai/registerHclsTools=true`.
+   */
+  readonly registerHclsTools?: boolean;
 }
 
 export class RegistryStack extends Stack {
@@ -257,6 +278,188 @@ export class RegistryStack extends Stack {
         value: haloRecord.getAtt("RecordId").toString(),
         description: "GA Registry record ID for the Halo: Patient Journey agent.",
       });
+    }
+
+    // ── HCLS / PubMed MCP tools ────────────────────────────────────────────
+    // The 5 hosted healthcare MCP servers (PubMed, Clinical Trials, ICD-10, NPI
+    // Registry, CMS Coverage) are LIVE as governed MCP-server targets on the
+    // enterprise governance gateway (enterprise-mcp-governance-gateway →
+    // HclsConnectorStack). That gateway is the source of truth: Cognito JWT
+    // auth + one ENFORCE Cedar read-permit per tool + request/response
+    // interceptors apply on every call, and tools/list + a real PubMed call are
+    // verified end-to-end through it.
+    //
+    // These records only make those tools DISCOVERABLE in the GA registry. They
+    // are RecordType CUSTOM (tools surface as tools, not agents), carrying a
+    // governance descriptor whose target is the gateway MCP endpoint — NOT a
+    // Lambda alias — which is why they are hand-written here instead of being
+    // emitted from PLATFORM_TOOL_CATALOGUE (that path assumes a Lambda :PROD
+    // alias and is asserted by phase-22 conformance; adding non-Lambda tools
+    // there would break it). Keep endpoints + tool lists in sync with
+    // HclsConnectorStack.HCLS_TARGETS. Auto-approves in nonprod; curator in prod.
+    if (props.registerHclsTools) {
+      // Mirror of HclsConnectorStack.HCLS_TARGETS (gateway = source of truth).
+      const hclsTargets: ReadonlyArray<{
+        toolId: string;
+        displayName: string;
+        endpoint: string;
+        international: boolean;
+        description: string;
+        tools: readonly string[];
+      }> = [
+        {
+          toolId: "tool-pubmed",
+          displayName: "PubMed",
+          endpoint: "https://pubmed.mcp.claude.com/mcp",
+          international: true,
+          description:
+            "PubMed biomedical literature search. Query by clinical concept, never patient identifiers.",
+          tools: [
+            "search_articles",
+            "get_article_metadata",
+            "find_related_articles",
+            "lookup_article_by_citation",
+            "convert_article_ids",
+            "get_full_text_article",
+            "get_copyright_status",
+          ],
+        },
+        {
+          toolId: "tool-clinical-trials",
+          displayName: "ClinicalTrials",
+          endpoint: "https://hcls.mcp.claude.com/clinical_trials/mcp",
+          international: true,
+          description:
+            "Clinical trials registry search. Query by condition/criteria, never patient identifiers.",
+          tools: [
+            "search_trials",
+            "get_trial_details",
+            "search_by_sponsor",
+            "search_investigators",
+            "analyze_endpoints",
+            "search_by_eligibility",
+          ],
+        },
+        {
+          toolId: "tool-icd10",
+          displayName: "Icd10",
+          endpoint: "https://hcls.mcp.claude.com/icd10_codes/mcp",
+          international: false,
+          description:
+            "ICD-10 code lookup/validation (US-centric ICD-10-CM). For coding/RCM use cases.",
+          tools: [
+            "lookup_code",
+            "search_codes",
+            "validate_code",
+            "get_hierarchy",
+            "get_by_category",
+            "get_by_body_system",
+          ],
+        },
+        {
+          toolId: "tool-npi-registry",
+          displayName: "NpiRegistry",
+          endpoint: "https://hcls.mcp.claude.com/npi_registry/mcp",
+          international: false,
+          description:
+            "NPI provider registry lookup (US-only CMS NPI). For US coding/RCM use cases.",
+          tools: ["npi_validate", "npi_lookup", "npi_search"],
+        },
+        {
+          toolId: "tool-cms-coverage",
+          displayName: "CmsCoverage",
+          endpoint: "https://hcls.mcp.claude.com/cms_coverage/mcp",
+          international: false,
+          description:
+            "CMS coverage/policy lookup (US-centric). For coding/PA/RCM use cases.",
+          tools: [
+            "search_national_coverage",
+            "search_local_coverage",
+            "get_coverage_document",
+            "get_contractors",
+            "get_whats_new_report",
+            "batch_get_ncds",
+            "sad_exclusion_list",
+          ],
+        },
+      ];
+
+      for (const target of hclsTargets) {
+        // CUSTOM governance descriptor. The authoritative enforcement lives on
+        // the gateway (ENFORCE Cedar, read permit per tool); this document
+        // records the governance posture for discovery/audit, with the gateway
+        // MCP endpoint as the target (type "mcp-server", no Lambda alias).
+        const governance = {
+          schemaVersion: "agenticai.tool-governance/1.0",
+          toolId: target.toolId,
+          description: target.description,
+          desiredApprovalStatus: "approved",
+          target: {
+            type: "mcp-server",
+            endpoint: target.endpoint,
+            // Discovery/enforcement is on the enterprise governance gateway;
+            // this record does not itself route traffic.
+            gatewayStack: "enterprise-mcp-governance-gateway/HclsConnectorStack",
+          },
+          mcp: {
+            // Tools are namespaced <DisplayName>___<tool> on the gateway.
+            server: target.displayName,
+            tools: target.tools.map((name) => ({
+              toolName: `${target.displayName}___${name}`,
+              description: target.description,
+            })),
+          },
+          authorization: {
+            // Public read-only reference servers: an unconditional READ permit
+            // per tool for authenticated gateway users (mirrors the live Cedar
+            // permits in HclsConnectorStack).
+            defaultDecision: "DENY",
+            allowedSubjects: [],
+            allowedGroups: [],
+            readOnly: true,
+          },
+          ownership: {
+            ownerTeam: "platform",
+            costCentre: props.costCentre,
+          },
+          metadata: {
+            international: target.international,
+            hostedBy: "anthropic-hosted-hcls-mcp",
+          },
+        };
+
+        const record = new CfnResource(this, `HclsToolRecord-${target.toolId}`, {
+          type: "AWS::AgentRegistry::RegistryRecord",
+          properties: {
+            RegistryId: this.gaRegistry.registryId,
+            Name: target.toolId,
+            DisplayName: target.displayName,
+            Description: target.description,
+            RecordType: "CUSTOM",
+            RecordVersion: "1.0.0",
+            Descriptors: {
+              Custom: {
+                Data: JSON.stringify(governance),
+              },
+            },
+            Tags: [
+              { Key: "application-id", Value: props.applicationId },
+              { Key: "agent-id", Value: "hcls-tools" },
+              { Key: "tenant-id", Value: "platform" },
+              { Key: "cost-centre", Value: props.costCentre },
+              { Key: "environment", Value: props.envName },
+              { Key: "owner-team", Value: "platform" },
+            ],
+          },
+        });
+        record.addDependsOn(this.gaRegistry.registry);
+        record.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
+
+        new CfnOutput(this, `HclsToolRecordId-${target.toolId}`, {
+          value: record.getAtt("RecordId").toString(),
+          description: `GA Registry record ID for the ${target.displayName} HCLS tool.`,
+        });
+      }
     }
   }
 }
