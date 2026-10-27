@@ -26,6 +26,7 @@ from aws_cdk import (
     Duration,
     RemovalPolicy,
     Stack,
+    Token,
     aws_bedrock as bedrock,
     aws_bedrockagentcore as agentcore,
     aws_cognito as cognito,
@@ -48,6 +49,15 @@ TARGET_DEFS = {
     "DocsAPI": ("DocsApiTarget", "docs_target", "docs-tools.json"),
     "DatabaseAPI": ("DatabaseApiTarget", "database_target", "database-tools.json"),
     "EhrAPI": ("EhrApiTarget", "ehr_target", "ehr-tools.json"),
+}
+
+# Targets whose Lambda is OWNED BY ANOTHER STACK and imported here by ARN from
+# CDK context. target name -> (construct id, lambda logical key, schema file,
+# context key holding the function ARN). A target is registered only when its
+# context key is set; until then it (and any policy that `requiresTarget` it)
+# is left out, because Cedar policies naming unregistered tools fail validation.
+EXTERNAL_TARGET_DEFS = {
+    "DeciderAPI": ("DeciderApiTarget", "decider_target", "decider-tools.json", "deciderLambdaArn"),
 }
 
 MANIFEST_PATH = REPO_ROOT / "policies" / "manifest.json"
@@ -144,6 +154,11 @@ class EnterpriseGatewayStack(Stack):
 
         # 1-2. Lambdas (CDK-managed least-privilege exec roles) + gateway exec role.
         self.functions = self._create_lambdas()
+        # Externally owned target Lambdas (imported by ARN). Merged into
+        # self.functions so the gateway role's InvokeLambdas grant and the
+        # SourceArn-pinned resource permission cover them like owned targets.
+        self.active_target_defs = dict(TARGET_DEFS)
+        self.functions.update(self._import_external_targets())
         self.gateway_role = self._create_gateway_role(self.functions)
         self._wire_guardrail_to_interceptors()
 
@@ -275,6 +290,33 @@ class EnterpriseGatewayStack(Stack):
                 **extra,
             )
         return functions
+
+    def _import_external_targets(self) -> dict[str, lambda_.IFunction]:
+        """Import target Lambdas owned by other stacks, by ARN from CDK context.
+
+        Only same-account functions are supported: the gateway's SourceArn-pinned
+        resource permission (see _grant_gateway_invoke) is added from THIS stack,
+        which requires ``same_environment``. A target with no ARN in context is
+        skipped and not registered.
+        """
+        imported: dict[str, lambda_.IFunction] = {}
+        for target_name, (cid, fn_key, schema_file, ctx_key) in EXTERNAL_TARGET_DEFS.items():
+            arn = (self.node.try_get_context(ctx_key) or "").strip()
+            if not arn:
+                continue
+            parts = arn.split(":")
+            if len(parts) < 7 or parts[2] != "lambda":
+                raise ValueError(f"{ctx_key} is not a Lambda function ARN: {arn!r}")
+            if not Token.is_unresolved(self.account) and parts[4] != self.account:
+                raise ValueError(
+                    f"{ctx_key} is in account {parts[4]}, but this stack deploys to "
+                    f"{self.account}; cross-account target Lambdas are not supported."
+                )
+            imported[fn_key] = lambda_.Function.from_function_attributes(
+                self, f"{cid}Fn", function_arn=arn, same_environment=True
+            )
+            self.active_target_defs[target_name] = (cid, fn_key, schema_file)
+        return imported
 
     # ------------------------------------------------------------------
     # 0. Bedrock Guardrail (managed content/PII controls for the interceptors)
@@ -739,7 +781,7 @@ class EnterpriseGatewayStack(Stack):
         Cedar policies (step 7) will depend on these targets (Risk #1).
         """
         targets: dict[str, agentcore.CfnGatewayTarget] = {}
-        for target_name, (cid, fn_key, schema_file) in TARGET_DEFS.items():
+        for target_name, (cid, fn_key, schema_file) in self.active_target_defs.items():
             targets[target_name] = agentcore.CfnGatewayTarget(
                 self,
                 cid,
@@ -829,6 +871,11 @@ class EnterpriseGatewayStack(Stack):
 
         policies: list[agentcore.CfnPolicy] = []
         for entry in manifest["policies"]:
+            # A policy tied to an optional target is skipped while that target is
+            # not registered (its tools would be unknown to the Cedar schema).
+            required = entry.get("requiresTarget")
+            if required and required not in self.targets:
+                continue
             base = entry["name"].replace("-", "_")  # name must be ^[A-Za-z][A-Za-z0-9_]*$
             cedar = (REPO_ROOT / entry["file"]).read_text()
             cedar = (
@@ -886,6 +933,9 @@ class EnterpriseGatewayStack(Stack):
             "lambda/database-target-arn": self.functions["database_target"].function_arn,
             "lambda/ehr-target-arn": self.functions["ehr_target"].function_arn,
         }
+        if "DeciderAPI" in self.targets:
+            params["targets/decider-api-id"] = self.targets["DeciderAPI"].attr_target_id
+            params["lambda/decider-target-arn"] = self.functions["decider_target"].function_arn
         for suffix, value in params.items():
             # Construct id: PascalCase from the suffix path (e.g. gateway/url -> GatewayUrlParam).
             cid = "".join(part.capitalize() for part in suffix.replace("/", "-").split("-")) + "Param"
