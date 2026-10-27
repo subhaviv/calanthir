@@ -1,0 +1,600 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-prostate",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30004"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Haddad",
+            "given": [
+              "Samir"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1954-03-08"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-prostate"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-prostate-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C61",
+              "display": "Malignant neoplasm of prostate (adenocarcinoma)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "399068003",
+              "display": "Malignant neoplasm of prostate (adenocarcinoma)"
+            }
+          ],
+          "text": "Malignant neoplasm of prostate (adenocarcinoma)"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "onsetDateTime": "2025-11-04",
+        "recordedDate": "2026-02-02"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-prostate-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-prostate-cc-0",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "I10",
+              "display": "Essential hypertension"
+            }
+          ],
+          "text": "Essential hypertension"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "recordedDate": "2020-08-12"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-prostate-cc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group"
+            }
+          ],
+          "text": "Stage group"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-02-10",
+        "valueString": "cT2c N0 M0; Gleason 4+3=7 (Grade Group 3)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Risk group"
+            }
+          ],
+          "text": "Risk group"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-02-12",
+        "valueString": "NCCN unfavorable intermediate risk"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2857-1",
+              "display": "PSA"
+            }
+          ],
+          "text": "PSA"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-01-23",
+        "valueQuantity": {
+          "value": 12.6,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2857-1",
+              "display": "PSA"
+            }
+          ],
+          "text": "PSA"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-04-03",
+        "valueQuantity": {
+          "value": 2.1,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2857-1",
+              "display": "PSA"
+            }
+          ],
+          "text": "PSA"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-07-02",
+        "valueQuantity": {
+          "value": 0.4,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-prostate-mk-0-3",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2857-1",
+              "display": "PSA"
+            }
+          ],
+          "text": "PSA"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-10-30",
+        "valueQuantity": {
+          "value": 0.1,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-prostate-mk-0-3"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-prostate-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "76164006",
+              "display": "Transrectal prostate biopsy"
+            }
+          ],
+          "text": "Transrectal prostate biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "performedDateTime": "2026-02-02"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-prostate-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-prostate-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "399315003",
+              "display": "External beam radiotherapy to prostate"
+            }
+          ],
+          "text": "External beam radiotherapy to prostate"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "performedDateTime": "2026-03-19"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-prostate-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-prostate-med-0",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1000048",
+              "display": "Leuprolide (ADT)"
+            }
+          ],
+          "text": "Leuprolide (ADT)"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "authoredOn": "2026-02-22",
+        "dosageInstruction": [
+          {
+            "text": "22.5 mg IM q3mo"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-prostate-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-prostate-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "started": "2026-01-30T09:00:00Z",
+        "numberOfSeries": 6,
+        "numberOfInstances": 480,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "MR"
+          }
+        ],
+        "description": "Multiparametric prostate MRI"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-prostate-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-prostate-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "Multiparametric prostate MRI"
+            }
+          ],
+          "text": "Multiparametric prostate MRI"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-01-30T09:00:00Z",
+        "issued": "2026-01-30T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-prostate-img-0"
+          }
+        ],
+        "conclusion": "PI-RADS 5 lesion left peripheral zone; no extracapsular extension."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-prostate-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-prostate-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "started": "2026-02-08T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 410,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "NM"
+          }
+        ],
+        "description": "PSMA PET/CT"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-prostate-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-prostate-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "PSMA PET/CT"
+            }
+          ],
+          "text": "PSMA PET/CT"
+        },
+        "subject": {
+          "reference": "Patient/onc-prostate"
+        },
+        "effectiveDateTime": "2026-02-08T09:00:00Z",
+        "issued": "2026-02-08T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-prostate-img-1"
+          }
+        ],
+        "conclusion": "PSMA-avid prostate lesion; no nodal or distant disease."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-prostate-dr-1"
+      }
+    }
+  ]
+}

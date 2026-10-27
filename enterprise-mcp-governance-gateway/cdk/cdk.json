@@ -13,6 +13,7 @@
   },
   "context": {
     "authUserPoolId": "us-east-1_NoErXe1QA",
-    "authClientId": "3o0q6hdtfo1sphqq7jtqaspb3f"
+    "authClientId": "3o0q6hdtfo1sphqq7jtqaspb3f",
+    "cliClientId": "hi2gjukmcudn24f8lavcdjg17"
   }
 }

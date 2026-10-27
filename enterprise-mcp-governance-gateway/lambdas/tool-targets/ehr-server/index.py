@@ -84,6 +84,12 @@ def handler(event, context):
                 f"/Observation?patient={urllib.parse.quote(patient_id)}"
                 "&_count=20&_sort=-date"
             )
+            cond_bundle = _fhir_get(
+                f"/Condition?patient={urllib.parse.quote(patient_id)}&_count=20"
+            )
+            med_bundle = _fhir_get(
+                f"/MedicationRequest?patient={urllib.parse.quote(patient_id)}&_count=20"
+            )
         except urllib.error.HTTPError as e:
             return _text(f"EHR lookup failed: HTTP {e.code} for patient {patient_id}")
         except Exception as e:  # noqa: BLE001
@@ -102,6 +108,30 @@ def handler(event, context):
                 "effective": r.get("effectiveDateTime"),
                 "status": r.get("status"),
             })
+        conditions = []
+        for entry in (cond_bundle.get("entry") or []):
+            r = entry.get("resource") or {}
+            code = ((r.get("code") or {}).get("text")
+                    or (((r.get("code") or {}).get("coding") or [{}])[0].get("display")))
+            conditions.append({
+                "code": code,
+                "clinicalStatus": (((r.get("clinicalStatus") or {}).get("coding")
+                                    or [{}])[0].get("code")),
+                "onset": r.get("onsetDateTime"),
+                "recorded": r.get("recordedDate"),
+            })
+        medications = []
+        for entry in (med_bundle.get("entry") or []):
+            r = entry.get("resource") or {}
+            mcc = r.get("medicationCodeableConcept") or {}
+            name = (mcc.get("text")
+                    or ((mcc.get("coding") or [{}])[0].get("display")))
+            medications.append({
+                "medication": name,
+                "status": r.get("status"),
+                "intent": r.get("intent"),
+                "authoredOn": r.get("authoredOn"),
+            })
         result = {
             "patient": {
                 "id": patient.get("id"),
@@ -109,6 +139,8 @@ def handler(event, context):
                 "gender": patient.get("gender"),
                 "birthDate": patient.get("birthDate"),
             },
+            "conditions": conditions,
+            "medications": medications,
             "observations": observations,
         }
         return _text(json.dumps(result, indent=2))

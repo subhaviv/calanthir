@@ -1,0 +1,525 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-lymphoma",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30005"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Petrova",
+            "given": [
+              "Irina"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1990-12-30"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-lymphoma"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-lymphoma-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C83.30",
+              "display": "Diffuse large B-cell lymphoma, unspecified site"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "109979007",
+              "display": "Diffuse large B-cell lymphoma, unspecified site"
+            }
+          ],
+          "text": "Diffuse large B-cell lymphoma, unspecified site"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "onsetDateTime": "2026-03-09",
+        "recordedDate": "2026-04-18"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-lymphoma-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lymphoma-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Ann Arbor stage"
+            }
+          ],
+          "text": "Ann Arbor stage"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-04-30",
+        "valueString": "Stage III-B (B symptoms present); IPI 2"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lymphoma-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lymphoma-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Pathology"
+            }
+          ],
+          "text": "Pathology"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-05-02",
+        "valueString": "DLBCL, germinal-center B-cell type; CD20+, MYC/BCL2 double-expressor"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lymphoma-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lymphoma-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "14804-9",
+              "display": "LDH"
+            }
+          ],
+          "text": "LDH"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-04-23",
+        "valueQuantity": {
+          "value": 420,
+          "unit": "U/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/L"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lymphoma-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lymphoma-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "14804-9",
+              "display": "LDH"
+            }
+          ],
+          "text": "LDH"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-06-17",
+        "valueQuantity": {
+          "value": 260,
+          "unit": "U/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/L"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lymphoma-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lymphoma-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "14804-9",
+              "display": "LDH"
+            }
+          ],
+          "text": "LDH"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-09-15",
+        "valueQuantity": {
+          "value": 190,
+          "unit": "U/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/L"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lymphoma-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-lymphoma-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "174184006",
+              "display": "Excisional lymph node biopsy"
+            }
+          ],
+          "text": "Excisional lymph node biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "performedDateTime": "2026-04-18"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-lymphoma-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-lymphoma-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "234336002",
+              "display": "Bone marrow aspirate and biopsy"
+            }
+          ],
+          "text": "Bone marrow aspirate and biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "performedDateTime": "2026-04-28"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-lymphoma-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-lymphoma-med-0",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1657741",
+              "display": "R-CHOP (rituximab + cyclophosphamide + doxorubicin + vincristine + prednisone)"
+            }
+          ],
+          "text": "R-CHOP (rituximab + cyclophosphamide + doxorubicin + vincristine + prednisone)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "authoredOn": "2026-05-06",
+        "dosageInstruction": [
+          {
+            "text": "q3wk x6 cycles"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-lymphoma-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-lymphoma-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "started": "2026-04-26T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 450,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "PT"
+          }
+        ],
+        "description": "FDG PET/CT (staging)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-lymphoma-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-lymphoma-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "FDG PET/CT (staging)"
+            }
+          ],
+          "text": "FDG PET/CT (staging)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-04-26T09:00:00Z",
+        "issued": "2026-04-26T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-lymphoma-img-0"
+          }
+        ],
+        "conclusion": "FDG-avid nodal disease above and below diaphragm; spleen involved. Deauville N/A (baseline)."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-lymphoma-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-lymphoma-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "started": "2026-06-27T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 440,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "PT"
+          }
+        ],
+        "description": "FDG PET/CT (interim)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-lymphoma-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-lymphoma-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "FDG PET/CT (interim)"
+            }
+          ],
+          "text": "FDG PET/CT (interim)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lymphoma"
+        },
+        "effectiveDateTime": "2026-06-27T09:00:00Z",
+        "issued": "2026-06-27T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-lymphoma-img-1"
+          }
+        ],
+        "conclusion": "Marked metabolic response, Deauville 2. Good interim response."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-lymphoma-dr-1"
+      }
+    }
+  ]
+}

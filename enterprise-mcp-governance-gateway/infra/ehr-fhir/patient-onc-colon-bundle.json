@@ -1,0 +1,784 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-colon",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30003"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Oyelaran",
+            "given": [
+              "Ade"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1965-07-19"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-colon"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-colon-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C18.7",
+              "display": "Malignant neoplasm of sigmoid colon (adenocarcinoma)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "363406005",
+              "display": "Malignant neoplasm of sigmoid colon (adenocarcinoma)"
+            }
+          ],
+          "text": "Malignant neoplasm of sigmoid colon (adenocarcinoma)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "onsetDateTime": "2025-09-15",
+        "recordedDate": "2025-11-14"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-colon-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-colon-cc-0",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus"
+            }
+          ],
+          "text": "Type 2 diabetes mellitus"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "recordedDate": "2020-12-10"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-colon-cc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group (AJCC)"
+            }
+          ],
+          "text": "Stage group (AJCC)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2025-11-29",
+        "valueString": "Stage IV (pT3 N1 M1 - liver metastases)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Molecular"
+            }
+          ],
+          "text": "Molecular"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2025-12-04",
+        "valueString": "KRAS G12D mutant, BRAF wild-type, MSS"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2025-11-17",
+        "valueQuantity": {
+          "value": 142,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2026-02-12",
+        "valueQuantity": {
+          "value": 48,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2026-05-13",
+        "valueQuantity": {
+          "value": 31,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-colon-mk-0-3",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2026-09-10",
+        "valueQuantity": {
+          "value": 58,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-colon-mk-0-3"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-colon-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "73761001",
+              "display": "Colonoscopy with biopsy"
+            }
+          ],
+          "text": "Colonoscopy with biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "performedDateTime": "2025-11-14"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-colon-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-colon-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "26390003",
+              "display": "Sigmoid colectomy"
+            }
+          ],
+          "text": "Sigmoid colectomy"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "performedDateTime": "2025-12-09"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-colon-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-colon-proc-2",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "55705006",
+              "display": "Port-a-cath placement"
+            }
+          ],
+          "text": "Port-a-cath placement"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "performedDateTime": "2025-12-19"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-colon-proc-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-colon-med-0",
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1736854",
+              "display": "FOLFOX (5-FU + leucovorin + oxaliplatin)"
+            }
+          ],
+          "text": "FOLFOX (5-FU + leucovorin + oxaliplatin)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "authoredOn": "2025-12-24",
+        "dosageInstruction": [
+          {
+            "text": "q2wk x12 cycles"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-colon-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-colon-med-1",
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1657793",
+              "display": "Bevacizumab"
+            }
+          ],
+          "text": "Bevacizumab"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "authoredOn": "2025-12-24",
+        "dosageInstruction": [
+          {
+            "text": "5 mg/kg IV q2wk"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-colon-med-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-colon-med-2",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1726319",
+              "display": "FOLFIRI (second line)"
+            }
+          ],
+          "text": "FOLFIRI (second line)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "authoredOn": "2026-09-20",
+        "dosageInstruction": [
+          {
+            "text": "q2wk"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-colon-med-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-colon-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "started": "2025-11-19T09:00:00Z",
+        "numberOfSeries": 3,
+        "numberOfInstances": 340,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "CT abdomen/pelvis"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-colon-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-colon-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "CT abdomen/pelvis"
+            }
+          ],
+          "text": "CT abdomen/pelvis"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2025-11-19T09:00:00Z",
+        "issued": "2025-11-19T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-colon-img-0"
+          }
+        ],
+        "conclusion": "Sigmoid mass with 3 hepatic metastases (largest 4.2 cm)."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-colon-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-colon-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "started": "2026-05-18T09:00:00Z",
+        "numberOfSeries": 3,
+        "numberOfInstances": 330,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "CT abdomen (restaging)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-colon-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-colon-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "CT abdomen (restaging)"
+            }
+          ],
+          "text": "CT abdomen (restaging)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2026-05-18T09:00:00Z",
+        "issued": "2026-05-18T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-colon-img-1"
+          }
+        ],
+        "conclusion": "Partial response: hepatic lesions decreased ~40%."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-colon-dr-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-colon-img-2",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "started": "2026-09-10T09:00:00Z",
+        "numberOfSeries": 3,
+        "numberOfInstances": 335,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "CT abdomen (surveillance)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-colon-img-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-colon-dr-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "CT abdomen (surveillance)"
+            }
+          ],
+          "text": "CT abdomen (surveillance)"
+        },
+        "subject": {
+          "reference": "Patient/onc-colon"
+        },
+        "effectiveDateTime": "2026-09-10T09:00:00Z",
+        "issued": "2026-09-10T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-colon-img-2"
+          }
+        ],
+        "conclusion": "Progression: new hepatic lesion; rising CEA. Second-line therapy indicated."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-colon-dr-2"
+      }
+    }
+  ]
+}

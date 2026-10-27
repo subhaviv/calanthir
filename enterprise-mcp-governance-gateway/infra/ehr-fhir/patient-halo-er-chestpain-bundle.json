@@ -754,6 +754,33 @@
         "method": "PUT",
         "url": "MedicationRequest/halo-er-chestpain-med-1"
       }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "halo-er-chestpain-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/halo-er-chestpain"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-chestpain-enc"
+        },
+        "started": "2026-10-14T06:50:00Z",
+        "numberOfSeries": 1,
+        "numberOfInstances": 2,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "DX"
+          }
+        ],
+        "description": "Chest X-ray, portable AP (ED)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/halo-er-chestpain-img-0"
+      }
     }
   ]
 }

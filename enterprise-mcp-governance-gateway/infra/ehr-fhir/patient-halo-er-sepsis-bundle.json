@@ -878,6 +878,33 @@
         "method": "PUT",
         "url": "MedicationRequest/halo-er-sepsis-med-1"
       }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "halo-er-sepsis-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/halo-er-sepsis"
+        },
+        "encounter": {
+          "reference": "Encounter/halo-er-sepsis-enc"
+        },
+        "started": "2026-10-15T14:30:00Z",
+        "numberOfSeries": 1,
+        "numberOfInstances": 2,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "DX"
+          }
+        ],
+        "description": "Chest X-ray, PA and lateral (source workup)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/halo-er-sepsis-img-0"
+      }
     }
   ]
 }

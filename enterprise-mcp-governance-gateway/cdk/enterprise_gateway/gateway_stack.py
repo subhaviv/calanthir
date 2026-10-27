@@ -166,6 +166,16 @@ class EnterpriseGatewayStack(Stack):
         self.auth_user_pool_id = self.user_pool.user_pool_id
         self.auth_client_ids = [self.user_pool_client.user_pool_client_id]
 
+        # Additionally trust the dedicated CLI/server app client on the SAME loom
+        # pool (ADMIN_USER_PASSWORD_AUTH), used by the gw-mcp.sh token wrapper /
+        # Quick desktop. It is SEPARATE from the browser PKCE client above so an
+        # edit to one never clobbers the other. Supplied via context (cliClientId,
+        # defaulted in cdk.json). Without this, a deploy would reset allowedClients
+        # to only the browser client and lock the CLI path out.
+        cli_client_id = self.node.try_get_context("cliClientId")
+        if cli_client_id and cli_client_id not in self.auth_client_ids:
+            self.auth_client_ids.append(cli_client_id)
+
         # 4. Cedar policy engine, encrypted with the customer-managed key.
         self.policy_engine = self._create_policy_engine()
 

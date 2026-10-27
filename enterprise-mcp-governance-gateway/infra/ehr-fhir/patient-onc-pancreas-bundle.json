@@ -1,0 +1,578 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-pancreas",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30006"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Diallo",
+            "given": [
+              "Fatou"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1961-05-21"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-pancreas"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-pancreas-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C25.0",
+              "display": "Malignant neoplasm of head of pancreas (ductal adenocarcinoma)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "372142002",
+              "display": "Malignant neoplasm of head of pancreas (ductal adenocarcinoma)"
+            }
+          ],
+          "text": "Malignant neoplasm of head of pancreas (ductal adenocarcinoma)"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "onsetDateTime": "2026-04-25",
+        "recordedDate": "2026-05-30"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-pancreas-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-pancreas-cc-0",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "K86.1",
+              "display": "Chronic pancreatitis"
+            }
+          ],
+          "text": "Chronic pancreatitis"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "recordedDate": "2024-10-07"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-pancreas-cc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-pancreas-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group"
+            }
+          ],
+          "text": "Stage group"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-06-09",
+        "valueString": "Borderline resectable (cT3 N1 M0)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-pancreas-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-pancreas-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Molecular"
+            }
+          ],
+          "text": "Molecular"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-06-14",
+        "valueString": "No targetable alteration; germline BRCA wild-type"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-pancreas-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-pancreas-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "24108-3",
+              "display": "CA 19-9"
+            }
+          ],
+          "text": "CA 19-9"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-06-02",
+        "valueQuantity": {
+          "value": 890,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-pancreas-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-pancreas-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "24108-3",
+              "display": "CA 19-9"
+            }
+          ],
+          "text": "CA 19-9"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-08-13",
+        "valueQuantity": {
+          "value": 310,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-pancreas-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-pancreas-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "24108-3",
+              "display": "CA 19-9"
+            }
+          ],
+          "text": "CA 19-9"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-11-06",
+        "valueQuantity": {
+          "value": 140,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-pancreas-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-pancreas-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "386817006",
+              "display": "EUS-guided fine needle aspiration of pancreas"
+            }
+          ],
+          "text": "EUS-guided fine needle aspiration of pancreas"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "performedDateTime": "2026-05-30"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-pancreas-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-pancreas-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "73307004",
+              "display": "Biliary stent placement (ERCP)"
+            }
+          ],
+          "text": "Biliary stent placement (ERCP)"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "performedDateTime": "2026-06-05"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-pancreas-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-pancreas-med-0",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1736776",
+              "display": "FOLFIRINOX (neoadjuvant)"
+            }
+          ],
+          "text": "FOLFIRINOX (neoadjuvant)"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "authoredOn": "2026-06-19",
+        "dosageInstruction": [
+          {
+            "text": "q2wk x6 cycles"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-pancreas-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-pancreas-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "started": "2026-06-01T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 360,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "Pancreas-protocol CT"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-pancreas-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-pancreas-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "Pancreas-protocol CT"
+            }
+          ],
+          "text": "Pancreas-protocol CT"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-06-01T09:00:00Z",
+        "issued": "2026-06-01T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-pancreas-img-0"
+          }
+        ],
+        "conclusion": "3.3 cm pancreatic head mass abutting SMV <180 deg; borderline resectable; 1 regional node."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-pancreas-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-pancreas-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "started": "2026-10-27T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 360,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "Pancreas-protocol CT (restaging)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-pancreas-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-pancreas-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "Pancreas-protocol CT (restaging)"
+            }
+          ],
+          "text": "Pancreas-protocol CT (restaging)"
+        },
+        "subject": {
+          "reference": "Patient/onc-pancreas"
+        },
+        "effectiveDateTime": "2026-10-27T09:00:00Z",
+        "issued": "2026-10-27T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-pancreas-img-1"
+          }
+        ],
+        "conclusion": "Decrease in mass size and SMV contact; CA 19-9 falling. Re-evaluate for resection."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-pancreas-dr-1"
+      }
+    }
+  ]
+}

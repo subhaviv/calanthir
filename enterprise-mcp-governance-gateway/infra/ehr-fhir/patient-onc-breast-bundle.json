@@ -1,0 +1,620 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-breast",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30002"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Nakamura",
+            "given": [
+              "Yuki"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1972-09-02"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-breast"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-breast-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C50.911",
+              "display": "Malignant neoplasm of right female breast (invasive ductal carcinoma)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "254837009",
+              "display": "Malignant neoplasm of right female breast (invasive ductal carcinoma)"
+            }
+          ],
+          "text": "Malignant neoplasm of right female breast (invasive ductal carcinoma)"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "onsetDateTime": "2026-01-02",
+        "recordedDate": "2026-01-22"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-breast-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-breast-cc-0",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E03.9",
+              "display": "Hypothyroidism"
+            }
+          ],
+          "text": "Hypothyroidism"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "recordedDate": "2023-08-06"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-breast-cc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group (AJCC)"
+            }
+          ],
+          "text": "Stage group (AJCC)"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-02-01",
+        "valueString": "Stage IIA (pT2 N0 M0)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Histology/receptors"
+            }
+          ],
+          "text": "Histology/receptors"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-02-03",
+        "valueString": "Invasive ductal carcinoma, grade 2; ER 95%, PR 80%, HER2 negative; Ki-67 22%"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-stage-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85337-4",
+              "display": "Oncotype DX recurrence score"
+            }
+          ],
+          "text": "Oncotype DX recurrence score"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-02-11",
+        "valueString": "RS 21 (intermediate)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-stage-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6875-9",
+              "display": "CA 15-3"
+            }
+          ],
+          "text": "CA 15-3"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-01-27",
+        "valueQuantity": {
+          "value": 42,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6875-9",
+              "display": "CA 15-3"
+            }
+          ],
+          "text": "CA 15-3"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-05-22",
+        "valueQuantity": {
+          "value": 24,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-breast-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6875-9",
+              "display": "CA 15-3"
+            }
+          ],
+          "text": "CA 15-3"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-09-19",
+        "valueQuantity": {
+          "value": 19,
+          "unit": "U/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-breast-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-breast-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "122548005",
+              "display": "Core needle biopsy of breast"
+            }
+          ],
+          "text": "Core needle biopsy of breast"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "performedDateTime": "2026-01-24"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-breast-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-breast-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "392021009",
+              "display": "Lumpectomy with sentinel node biopsy"
+            }
+          ],
+          "text": "Lumpectomy with sentinel node biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "performedDateTime": "2026-02-16"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-breast-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-breast-proc-2",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "399315003",
+              "display": "Adjuvant whole-breast radiotherapy"
+            }
+          ],
+          "text": "Adjuvant whole-breast radiotherapy"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "performedDateTime": "2026-05-22"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-breast-proc-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-breast-med-0",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "198240",
+              "display": "Anastrozole (aromatase inhibitor)"
+            }
+          ],
+          "text": "Anastrozole (aromatase inhibitor)"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "authoredOn": "2026-03-23",
+        "dosageInstruction": [
+          {
+            "text": "1 mg PO daily"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-breast-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-breast-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "started": "2026-01-17T09:00:00Z",
+        "numberOfSeries": 2,
+        "numberOfInstances": 8,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "MG"
+          }
+        ],
+        "description": "Diagnostic mammogram"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-breast-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-breast-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "Diagnostic mammogram"
+            }
+          ],
+          "text": "Diagnostic mammogram"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-01-17T09:00:00Z",
+        "issued": "2026-01-17T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-breast-img-0"
+          }
+        ],
+        "conclusion": "2.4 cm spiculated mass right breast, BI-RADS 5."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-breast-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-breast-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "started": "2026-01-25T09:00:00Z",
+        "numberOfSeries": 5,
+        "numberOfInstances": 600,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "MR"
+          }
+        ],
+        "description": "Breast MRI"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-breast-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-breast-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "Breast MRI"
+            }
+          ],
+          "text": "Breast MRI"
+        },
+        "subject": {
+          "reference": "Patient/onc-breast"
+        },
+        "effectiveDateTime": "2026-01-25T09:00:00Z",
+        "issued": "2026-01-25T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-breast-img-1"
+          }
+        ],
+        "conclusion": "Unifocal 2.3 cm enhancing mass; no additional lesions; nodes unremarkable."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-breast-dr-1"
+      }
+    }
+  ]
+}

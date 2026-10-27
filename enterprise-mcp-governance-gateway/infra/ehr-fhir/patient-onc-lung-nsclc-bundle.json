@@ -1,0 +1,776 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "onc-lung-nsclc",
+        "identifier": [
+          {
+            "system": "http://halo.example/mrn",
+            "value": "ONC-30001"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Alvarez",
+            "given": [
+              "Carlos"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1958-02-14"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/onc-lung-nsclc"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-lung-nsclc-dx",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C34.11",
+              "display": "Malignant neoplasm of right upper lobe, bronchus or lung (NSCLC, adenocarcinoma)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "254637007",
+              "display": "Malignant neoplasm of right upper lobe, bronchus or lung (NSCLC, adenocarcinoma)"
+            }
+          ],
+          "text": "Malignant neoplasm of right upper lobe, bronchus or lung (NSCLC, adenocarcinoma)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "onsetDateTime": "2026-01-24",
+        "recordedDate": "2026-03-10"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-lung-nsclc-dx"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-lung-nsclc-cc-0",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "J44.9",
+              "display": "COPD"
+            }
+          ],
+          "text": "COPD"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "recordedDate": "2022-05-10"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-lung-nsclc-cc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "onc-lung-nsclc-cc-1",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "F17.210",
+              "display": "Nicotine dependence, cigarettes"
+            }
+          ],
+          "text": "Nicotine dependence, cigarettes"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "recordedDate": "2017-12-22"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/onc-lung-nsclc-cc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-stage-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group (AJCC)"
+            }
+          ],
+          "text": "Stage group (AJCC)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-03-13",
+        "valueString": "Stage IIIB (cT3 N2 M0)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-stage-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-stage-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59847-4",
+              "display": "Histology"
+            }
+          ],
+          "text": "Histology"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-03-15",
+        "valueString": "Adenocarcinoma; PD-L1 TPS 60%; EGFR wild-type, ALK negative"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-stage-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-mk-0-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-03-12",
+        "valueQuantity": {
+          "value": 18.4,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-mk-0-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-mk-0-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-05-19",
+        "valueQuantity": {
+          "value": 9.1,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-mk-0-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-mk-0-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-07-28",
+        "valueQuantity": {
+          "value": 4.2,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-mk-0-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "onc-lung-nsclc-mk-0-3",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2039-6",
+              "display": "CEA"
+            }
+          ],
+          "text": "CEA"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-10-06",
+        "valueQuantity": {
+          "value": 3.1,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Observation/onc-lung-nsclc-mk-0-3"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-lung-nsclc-proc-0",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "432231006",
+              "display": "CT-guided lung biopsy"
+            }
+          ],
+          "text": "CT-guided lung biopsy"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "performedDateTime": "2026-03-11"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-lung-nsclc-proc-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-lung-nsclc-proc-1",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "77343006",
+              "display": "Mediastinoscopy with lymph node sampling"
+            }
+          ],
+          "text": "Mediastinoscopy with lymph node sampling"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "performedDateTime": "2026-03-17"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-lung-nsclc-proc-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "onc-lung-nsclc-proc-2",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "399315003",
+              "display": "Radiotherapy to thorax (concurrent)"
+            }
+          ],
+          "text": "Radiotherapy to thorax (concurrent)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "performedDateTime": "2026-04-09"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Procedure/onc-lung-nsclc-proc-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-lung-nsclc-med-0",
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1657736",
+              "display": "Carboplatin + pemetrexed (chemo)"
+            }
+          ],
+          "text": "Carboplatin + pemetrexed (chemo)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "authoredOn": "2026-04-07",
+        "dosageInstruction": [
+          {
+            "text": "AUC5 + 500 mg/m2 IV q3wk x4"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-lung-nsclc-med-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "onc-lung-nsclc-med-1",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1547545",
+              "display": "Durvalumab (consolidation immunotherapy)"
+            }
+          ],
+          "text": "Durvalumab (consolidation immunotherapy)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "authoredOn": "2026-07-08",
+        "dosageInstruction": [
+          {
+            "text": "10 mg/kg IV q2wk"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationRequest/onc-lung-nsclc-med-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-lung-nsclc-img-0",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "started": "2026-03-10T09:00:00Z",
+        "numberOfSeries": 3,
+        "numberOfInstances": 280,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "CT chest with contrast"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-lung-nsclc-img-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-lung-nsclc-dr-0",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "CT chest with contrast"
+            }
+          ],
+          "text": "CT chest with contrast"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-03-10T09:00:00Z",
+        "issued": "2026-03-10T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-lung-nsclc-img-0"
+          }
+        ],
+        "conclusion": "4.1 cm RUL mass with ipsilateral mediastinal nodes (N2). No distant disease."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-lung-nsclc-dr-0"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-lung-nsclc-img-1",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "started": "2026-03-14T09:00:00Z",
+        "numberOfSeries": 4,
+        "numberOfInstances": 420,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "PT"
+          }
+        ],
+        "description": "FDG PET/CT"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-lung-nsclc-img-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-lung-nsclc-dr-1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "FDG PET/CT"
+            }
+          ],
+          "text": "FDG PET/CT"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-03-14T09:00:00Z",
+        "issued": "2026-03-14T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-lung-nsclc-img-1"
+          }
+        ],
+        "conclusion": "Hypermetabolic RUL mass and station 4R/7 nodes; no distant FDG-avid disease."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-lung-nsclc-dr-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ImagingStudy",
+        "id": "onc-lung-nsclc-img-2",
+        "status": "available",
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "started": "2026-07-23T09:00:00Z",
+        "numberOfSeries": 3,
+        "numberOfInstances": 290,
+        "modality": [
+          {
+            "system": "http://dicom.nema.org/resources/ontology/DCM",
+            "code": "CT"
+          }
+        ],
+        "description": "CT chest (restaging)"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ImagingStudy/onc-lung-nsclc-img-2"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "onc-lung-nsclc-dr-2",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18748-4",
+              "display": "CT chest (restaging)"
+            }
+          ],
+          "text": "CT chest (restaging)"
+        },
+        "subject": {
+          "reference": "Patient/onc-lung-nsclc"
+        },
+        "effectiveDateTime": "2026-07-23T09:00:00Z",
+        "issued": "2026-07-23T09:00:00Z",
+        "imagingStudy": [
+          {
+            "reference": "ImagingStudy/onc-lung-nsclc-img-2"
+          }
+        ],
+        "conclusion": "Partial response: primary mass now 1.8 cm; nodal disease regressed."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/onc-lung-nsclc-dr-2"
+      }
+    }
+  ]
+}
