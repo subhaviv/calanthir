@@ -16,7 +16,7 @@
           },
           "questions": {
             "type": "object",
-            "description": "Map of question name -> question. Each question is {\"type\": \"choice\"|\"noul\"|\"score\", \"instructions\": \"...\", \"criteria\": ...}. choice: criteria is an object of option name -> description or null (2-255 options). noul: criteria optional, {\"true\": \"...\", \"false\": \"...\"}. score: criteria is an array of 2-10 levels, lowest first. Example: {\"team\": {\"type\": \"choice\", \"instructions\": \"Which team should handle this?\", \"criteria\": {\"billing\": null, \"sales\": null}}}."
+            "description": "Map of question name -> question. Each question is {\"type\": \"choice\"|\"noul\"|\"score\", \"instructions\": \"...\", \"criteria\": ...}. choice: criteria is an object of option name -> a short STRING description of that option (2-255 options; null descriptions are rejected by the deployed model server). noul: criteria optional, {\"true\": \"...\", \"false\": \"...\"}. score: criteria is an array of 2-10 levels, lowest first. Example: {\"team\": {\"type\": \"choice\", \"instructions\": \"Which team should handle this?\", \"criteria\": {\"billing\": \"payments and payouts\", \"sales\": \"new purchases\"}}}."
           }
         },
         "required": ["state", "questions"]
