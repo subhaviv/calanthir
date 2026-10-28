@@ -14,6 +14,7 @@ import os
 import aws_cdk as cdk
 
 from enterprise_gateway.gateway_stack import EnterpriseGatewayStack
+from agent_gateway.agent_gateway_stack import AgentGatewayStack
 from connectors.atlassian_stack import AtlassianConnectorStack
 from connectors.connector_auth_stack import ConnectorAuthStack
 from connectors.hcls_stack import HclsConnectorStack
@@ -74,6 +75,16 @@ HclsConnectorStack(
     "HclsConnectorStack",
     env=env,
     description="Hosted HCLS / PubMed MCP servers as governed gateway targets - CDK",
+)
+
+# Agent (machine-caller) MCP gateway: the M2M twin of the user gateway above.
+# JWT on the same loom IdP, but authorized by per-tool OAuth scopes granted to
+# each agent's own M2M client. Independent of the user gateway's stack.
+AgentGatewayStack(
+    app,
+    "AgentMcpGatewayStack",
+    env=env,
+    description="Agent MCP gateway (machine callers, scope-authorized) - CDK",
 )
 
 app.synth()
