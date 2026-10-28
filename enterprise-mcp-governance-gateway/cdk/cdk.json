@@ -14,6 +14,7 @@
   "context": {
     "authUserPoolId": "us-east-1_NoErXe1QA",
     "authClientId": "3o0q6hdtfo1sphqq7jtqaspb3f",
-    "cliClientId": "hi2gjukmcudn24f8lavcdjg17"
+    "cliClientId": "hi2gjukmcudn24f8lavcdjg17",
+    "deciderLambdaArn": "arn:aws:lambda:us-east-1:195698601974:function:strands-decider-decide"
   }
 }

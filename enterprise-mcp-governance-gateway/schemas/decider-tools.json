@@ -1,49 +1,25 @@
 {
   "tools": [
     {
-      "name": "decider_choose",
-      "description": "Pick ONE option from a set using the Strands Decider decision model (in-account SageMaker). Returns the chosen option, per-option probabilities and a calibrated confidence (>=0.9 is right ~95% of the time; below that, confirm or escalate).",
+      "name": "decide",
+      "description": "Ask the Strands Decider decision model (private, in-account SageMaker endpoint over PrivateLink) one or more typed questions about a state, in a single call. Question types: 'choice' (pick one of N named options), 'noul' (yes/no, returns P(yes)), 'score' (rate on an ordered rubric, lowest first). Every choice/score answer carries a calibrated confidence: >=0.9 is right ~95% of the time; below that, confirm or escalate.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "state": { "type": "string", "description": "The text the decision is about (may be empty when the question carries the whole task)." },
-          "question": { "type": "string", "description": "The decision to make, e.g. 'Which team should handle this?'." },
-          "options": {
-            "type": "array",
-            "description": "Option labels to choose between (2 to 255).",
-            "items": { "type": "string" }
+          "state": {
+            "type": "object",
+            "description": "What the decision is about. Put the text under 'request', e.g. {\"request\": \"Help! My payouts have been failing for 3 days!\"}.",
+            "properties": {
+              "request": { "type": "string", "description": "The text the questions are asked about." }
+            },
+            "required": ["request"]
+          },
+          "questions": {
+            "type": "object",
+            "description": "Map of question name -> question. Each question is {\"type\": \"choice\"|\"noul\"|\"score\", \"instructions\": \"...\", \"criteria\": ...}. choice: criteria is an object of option name -> description or null (2-255 options). noul: criteria optional, {\"true\": \"...\", \"false\": \"...\"}. score: criteria is an array of 2-10 levels, lowest first. Example: {\"team\": {\"type\": \"choice\", \"instructions\": \"Which team should handle this?\", \"criteria\": {\"billing\": null, \"sales\": null}}}."
           }
         },
-        "required": ["state", "question", "options"]
-      }
-    },
-    {
-      "name": "decider_yes_no",
-      "description": "Answer a yes/no question about a text using the Strands Decider decision model. Returns P(yes) in [0,1]; values near 0.5 are uncertain.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "state": { "type": "string", "description": "The text the question is about." },
-          "question": { "type": "string", "description": "A yes/no question, e.g. 'Does this convey urgency?'." }
-        },
-        "required": ["state", "question"]
-      }
-    },
-    {
-      "name": "decider_score",
-      "description": "Rate a text on an ordered rubric using the Strands Decider decision model. Returns the expected level index, per-level probabilities and a calibrated confidence.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "state": { "type": "string", "description": "The text to rate." },
-          "question": { "type": "string", "description": "What to rate, e.g. 'How frustrated is the writer?'." },
-          "levels": {
-            "type": "array",
-            "description": "Ordered rubric levels, lowest first (2 to 10), e.g. ['calm','frustrated','depressed'].",
-            "items": { "type": "string" }
-          }
-        },
-        "required": ["state", "question", "levels"]
+        "required": ["state", "questions"]
       }
     }
   ]
