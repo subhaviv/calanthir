@@ -168,6 +168,288 @@ export const PLATFORM_TOOL_CATALOGUE: Readonly<Record<ToolId, ToolSpec>> = {
       required: ["state", "questions"],
     },
   },
+  // COA (context-ontology-accelerator) agent tools. Each is its own Lambda with
+  // a PROD alias, owned and deployed by COA's ServeToolStack (coa-dev-serve-tool),
+  // generated from COA's tool-schemas.json. COA runs every call as one shared
+  // identity (factory-agents); which agents reach a tool is decided here by
+  // registry subscription.
+  "tool-coa-query": {
+    toolId: "tool-coa-query",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-query:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-query");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Answer a natural-language question against a COA namespace with tiered resolution (Tier 1 governed metrics, Tier 2 ontology-guided SQL, Tier 3 agentic fallback). Returns {result, requestId, sessionId}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Natural-language question, e.g. 'What is monthly revenue by region?'",
+        },
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to query.",
+        },
+        execute: {
+          type: "boolean",
+          description:
+            "False = translate only and return the generated query without running it.",
+        },
+        tierOverride: {
+          type: "integer",
+          description:
+            "Pin resolution to tier 1, 2 or 3. Omit for automatic routing.",
+        },
+        mode: {
+          type: "string",
+          description:
+            "'standard' (single shot) or 'deep-reasoning' (multi-step, slower).",
+        },
+        strategy: {
+          type: "string",
+          description:
+            "Tier-2 engine: best, ontop, nl_to_sql, ontop_first, nl_to_sql_first or deep-reasoning.",
+        },
+        dimensions: {
+          type: "array",
+          description: "Dimension filters.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Dimension name." },
+              value: { type: "string", description: "Dimension value." },
+            },
+            required: ["name", "value"],
+          },
+        },
+        includeSupporting: {
+          type: "boolean",
+          description: "Include supporting document chunks (default true).",
+        },
+        maxResults: {
+          type: "integer",
+          description: "Maximum result rows (default 1000, max 10000).",
+        },
+        timeoutMs: {
+          type: "integer",
+          description: "Optional shorter budget in milliseconds.",
+        },
+      },
+      required: ["query", "namespaceId"],
+    },
+  },
+  "tool-coa-translate-sparql": {
+    toolId: "tool-coa-translate-sparql",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-translate-sparql:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-translate-sparql");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Translate a natural-language question into SPARQL using the namespace's published ontology, without executing it. Returns {sparqlQuery, confidence, trace, ontologyVersion}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Natural-language question to translate.",
+        },
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace whose ontology is used.",
+        },
+      },
+      required: ["query", "namespaceId"],
+    },
+  },
+  "tool-coa-rag-retrieval": {
+    toolId: "tool-coa-rag-retrieval",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-rag-retrieval:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-rag-retrieval");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Retrieve semantically similar document chunks from the namespace's knowledge base. Returns {chunks, trace, queryEmbeddingModel}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Natural-language search query.",
+        },
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to search.",
+        },
+        topK: {
+          type: "integer",
+          description: "Maximum chunks to return (default 10, max 100).",
+        },
+        minScore: {
+          type: "number",
+          description: "Minimum similarity score, 0.0 to 1.0.",
+        },
+        sourceFilter: {
+          type: "array",
+          description: "Restrict to these source document ids.",
+          items: { type: "string" },
+        },
+        entityFilter: {
+          type: "array",
+          description: "Restrict to chunks annotated with these entities.",
+          items: { type: "string" },
+        },
+      },
+      required: ["query", "namespaceId"],
+    },
+  },
+  "tool-coa-graph-traversal": {
+    toolId: "tool-coa-graph-traversal",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-graph-traversal:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-graph-traversal");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Traverse the namespace's semantic graph from an entity IRI. Returns {entities, relationships, trace}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        startUri: {
+          type: "string",
+          description: "IRI of the entity to start from.",
+        },
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to traverse.",
+        },
+        maxDepth: {
+          type: "integer",
+          description: "Maximum depth (default 2, max 5).",
+        },
+        direction: {
+          type: "string",
+          description: "'outgoing', 'incoming' or 'both' (default).",
+        },
+        maxResults: {
+          type: "integer",
+          description: "Maximum entities (default 100, max 1000).",
+        },
+        relationshipFilter: {
+          type: "array",
+          description: "Restrict to these predicate IRIs.",
+          items: { type: "string" },
+        },
+      },
+      required: ["startUri", "namespaceId"],
+    },
+  },
+  "tool-coa-list-metrics": {
+    toolId: "tool-coa-list-metrics",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-list-metrics:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-list-metrics");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: List the governed metric definitions in a COA namespace (name, description, dimensions, synonyms). Call this first to discover which metrics exist before querying. Read-only. Returns {metrics, nextToken?}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to list metrics for.",
+        },
+        maxResults: {
+          type: "integer",
+          description: "Maximum metrics to return (default 100, max 1000).",
+        },
+        nextToken: {
+          type: "string",
+          description: "Continuation token from a previous response.",
+        },
+      },
+      required: ["namespaceId"],
+    },
+  },
+  "tool-coa-describe-schema": {
+    toolId: "tool-coa-describe-schema",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-describe-schema:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-describe-schema");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Describe a COA namespace's ontology: classes, their properties, and the data-source tables behind them. Use it to learn what data exists and how entities relate before querying. Read-only. Returns {classes, ontologyVersion}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to describe.",
+        },
+        maxResults: {
+          type: "integer",
+          description: "Maximum classes to return (default 100, max 500).",
+        },
+        includeProperties: {
+          type: "boolean",
+          description: "Include each class's properties (default true).",
+        },
+        classFilter: {
+          type: "string",
+          description: "Restrict to one class IRI or IRI prefix.",
+        },
+      },
+      required: ["namespaceId"],
+    },
+  },
+  "tool-coa-get-namespace": {
+    toolId: "tool-coa-get-namespace",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:coa-dev-serve-tool-get-namespace:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-coa-get-namespace");',
+    ownerTeam: "coa",
+    costCentre: "coa",
+    description:
+      "COA: Get a COA namespace's curated profile: display name, description and language, as authored by the namespace owner. Use it to frame the domain before querying. Read-only. Returns {namespace: {namespaceId, name, displayName, description, status, language}}.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        namespaceId: {
+          type: "string",
+          description: "The COA namespace to describe.",
+        },
+      },
+      required: ["namespaceId"],
+    },
+  },
 };
 
 export const PLATFORM_TOOL_CATALOGUE_VERSION = "2";
