@@ -40,6 +40,13 @@ function partitionArn(suffix: string): Record<string, unknown> {
   };
 }
 
+// Tools whose Lambda this stack builds (stubs); externally provisioned tools
+// (e.g. tool-decider, owned by StrandsDeciderStack) get records and grants only.
+const STUB_TOOL_IDS = Object.values(PLATFORM_TOOL_CATALOGUE)
+  .filter((tool) => !tool.externallyProvisioned)
+  .map((tool) => tool.toolId)
+  .sort();
+
 const DEFAULT_GATEWAY_ROLE_ARNS = WORKLOAD_ACCOUNT_IDS.map(
   (accountId, index) =>
     `arn:aws:iam::${accountId}:role/AgenticAI-D03-${index === 0 ? "nonprod" : "prod"}-shared-shared-gw-svc`,
@@ -125,11 +132,18 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
       expect(tagsToRecord(record.Properties.Tags)).toEqual(REQUIRED_TAGS);
       expect(record.DeletionPolicy).toBe("RetainExceptOnCreate");
       expect(record.UpdateReplacePolicy).toBe("Retain");
-      expect(JSON.stringify(record.DependsOn)).toContain("GaToolsAlias");
-
       const toolId = record.Properties.Name as string;
       const source = PLATFORM_TOOL_CATALOGUE[toolId];
       expect(source).toBeDefined();
+      if (!source.externallyProvisioned) {
+        expect(JSON.stringify(record.DependsOn)).toContain("GaToolsAlias");
+      }
+      const expectedArn = source.externallyProvisioned
+        ? source.targetArn
+            .replace("${PLATFORM_REGION}", "us-west-2")
+            .replace("${PLATFORM_ACCOUNT_ID}", PLATFORM_ACCOUNT_ID)
+        : `arn:aws:lambda:us-west-2:${PLATFORM_ACCOUNT_ID}:function:` +
+          `agenticai-platform-nonprod-${toolId}:PROD`;
       const governance = JSON.parse(record.Properties.Descriptors.Custom.Data);
       expect(governance).toMatchObject({
         schemaVersion: "agenticai.tool-governance/1.0",
@@ -139,9 +153,7 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
         desiredApprovalStatus: "approved",
         target: {
           type: "lambda",
-          arn:
-            `arn:aws:lambda:us-west-2:${PLATFORM_ACCOUNT_ID}:function:` +
-            `agenticai-platform-nonprod-${toolId}:PROD`,
+          arn: expectedArn,
         },
         mcp: {
           toolName: toolId,
@@ -241,8 +253,8 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
 
   it("creates tools without invoke permissions before Workstream roles exist", () => {
     const template = synth("nonprod", false);
-    template.resourceCountIs("AWS::Lambda::Function", 2);
-    template.resourceCountIs("AWS::Lambda::Alias", 2);
+    template.resourceCountIs("AWS::Lambda::Function", STUB_TOOL_IDS.length);
+    template.resourceCountIs("AWS::Lambda::Alias", STUB_TOOL_IDS.length);
     template.resourceCountIs("AWS::Lambda::Permission", 0);
   });
 
@@ -290,12 +302,11 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
       .map((fn) => fn.Properties.FunctionName)
       .filter((name): name is string => typeof name === "string")
       .sort();
-    expect(functionNames).toEqual([
-      "agenticai-platform-nonprod-tool-echo",
-      "agenticai-platform-nonprod-tool-ping",
-    ]);
-    template.resourceCountIs("AWS::Lambda::Alias", 2);
-    template.resourceCountIs("AWS::Logs::LogGroup", 2);
+    expect(functionNames).toEqual(
+      STUB_TOOL_IDS.map((toolId) => `agenticai-platform-nonprod-${toolId}`),
+    );
+    template.resourceCountIs("AWS::Lambda::Alias", STUB_TOOL_IDS.length);
+    template.resourceCountIs("AWS::Logs::LogGroup", STUB_TOOL_IDS.length);
     template.resourceCountIs("AWS::KMS::Key", 2);
     const keys = Object.values(
       template.findResources("AWS::KMS::Key"),
@@ -317,7 +328,7 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
       "AgenticAI-D03-nonprod-shared-shared-gw-svc";
     expect(
       principals.filter((principal) => principal.includes(expected)),
-    ).toHaveLength(2);
+    ).toHaveLength(Object.keys(PLATFORM_TOOL_CATALOGUE).length);
     expect(
       principals.some((principal) =>
         principal.includes("AgenticAI-D03-prod-shared-shared-gw-svc"),
@@ -325,11 +336,51 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
     ).toBe(false);
   });
 
+  it("points externally provisioned tools at their owning stack's alias without a stub", () => {
+    const deciderArn =
+      `arn:aws:lambda:us-west-2:${PLATFORM_ACCOUNT_ID}:function:` +
+      "strands-decider-decide:PROD";
+    const template = synth();
+    const functionNames = Object.values(
+      template.findResources("AWS::Lambda::Function"),
+    ).map((fn: any) => fn.Properties.FunctionName);
+    expect(functionNames).not.toContain(
+      "agenticai-platform-nonprod-tool-decider",
+    );
+    const roleNames = Object.values(
+      template.findResources("AWS::IAM::Role"),
+    ).map((role: any) => role.Properties.RoleName);
+    expect(roleNames).not.toContain(
+      "AgenticAI-Platform-nonprod-tool-decider-exec",
+    );
+
+    const record = (
+      Object.values(
+        template.findResources("AWS::AgentRegistry::RegistryRecord"),
+      ) as any[]
+    ).find((candidate) => candidate.Properties.Name === "tool-decider");
+    expect(record).toBeDefined();
+    expect(
+      JSON.parse(record.Properties.Descriptors.Custom.Data).target.arn,
+    ).toBe(deciderArn);
+
+    const grants = (
+      Object.values(template.findResources("AWS::Lambda::Permission")) as any[]
+    ).filter((permission) => permission.Properties.FunctionName === deciderArn);
+    expect(grants).toHaveLength(1);
+    expect(JSON.stringify(grants[0].Properties.Principal)).toContain(
+      "AgenticAI-D03-nonprod-shared-shared-gw-svc",
+    );
+    expect(
+      synth("nonprod", false).findResources("AWS::Lambda::Permission"),
+    ).toEqual({});
+  });
+
   it("names Platform tool roles inside the deployment boundary", () => {
     const roles = Object.values(
       synth("nonprod", false).findResources("AWS::IAM::Role"),
     ) as any[];
-    for (const toolId of Object.keys(PLATFORM_TOOL_CATALOGUE)) {
+    for (const toolId of STUB_TOOL_IDS) {
       const role = roles.find(
         (candidate) =>
           candidate.Properties.RoleName ===

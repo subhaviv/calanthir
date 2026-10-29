@@ -149,9 +149,10 @@ export class RegistryStack extends Stack {
       },
     });
     for (const [toolId, record] of Object.entries(this.gaRegistry.records)) {
-      record.addDependsOn(
-        this.gaTools.aliases[toolId].node.defaultChild as CfnResource,
-      );
+      const alias = this.gaTools.aliases[toolId];
+      if (alias) {
+        record.addDependsOn(alias.node.defaultChild as CfnResource);
+      }
     }
 
     // ── Benefits Q&A agent record ──────────────────────────────────────────

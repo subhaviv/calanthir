@@ -52,6 +52,14 @@ export interface ToolSpec {
   /** Lambda alias ARN. Platform-owned targets use both `${PLATFORM_REGION}` and `${PLATFORM_ACCOUNT_ID}` placeholders. */
   readonly targetArn: string;
   readonly targetAccountId?: string; // optional; when present the tool lives cross-account (platform-workload or workload-workload)
+  /**
+   * True when the target Lambda and its alias are deployed by the tool's own
+   * stack (e.g. StrandsDeciderStack). The registry stack then builds no stub
+   * function for it: the GA record points at the resolved `targetArn`, and
+   * Gateway invoke grants are added to that existing alias. Undefined/false
+   * keeps the default of a pipeline-owned, environment-isolated function.
+   */
+  readonly externallyProvisioned?: boolean;
   readonly cedarPolicy: string; // per-tool Cedar snippet, union-ed into Gateway policy at synth
   readonly ownerTeam: string; // e.g. 'platform-ai', 'retail', 'hr'
   readonly costCentre: string; // CUR attribution passthrough
@@ -125,6 +133,40 @@ export const PLATFORM_TOOL_CATALOGUE: Readonly<Record<ToolId, ToolSpec>> = {
       "Returns pong + timestamp + caller principal. Observability probe.",
     approvalStatus: "approved",
     inputSchema: { type: "object", properties: {} },
+  },
+  // Strands Decider: a small decision model (choice / yes-no / rubric score with
+  // calibrated confidence) on a private in-account SageMaker endpoint. The
+  // Lambda and its `PROD` alias are owned by StrandsDeciderStack; it reads no
+  // enterprise data, so any authenticated principal may call it.
+  "tool-decider": {
+    toolId: "tool-decider",
+    targetArn:
+      "arn:aws:lambda:${PLATFORM_REGION}:${PLATFORM_ACCOUNT_ID}:function:strands-decider-decide:PROD",
+    externallyProvisioned: true,
+    cedarPolicy:
+      'permit(principal, action == Action::"InvokeTool", resource == Tool::"tool-decider");',
+    ownerTeam: "platform-ai",
+    costCentre: "platform",
+    description:
+      "Strands Decider: answers typed questions (choice, noul yes/no, rubric score) about a state with a calibrated confidence per answer.",
+    approvalStatus: "approved",
+    inputSchema: {
+      type: "object",
+      properties: {
+        state: {
+          type: "object",
+          description: 'What the decision is about, as {"request": "<text>"}.',
+          properties: { request: { type: "string" } },
+          required: ["request"],
+        },
+        questions: {
+          type: "object",
+          description:
+            "Map of name -> {type: choice|noul|score, instructions, criteria}. choice: criteria maps each option to a short string description (2-255 options); noul: criteria optional; score: criteria is 2-10 levels, lowest first.",
+        },
+      },
+      required: ["state", "questions"],
+    },
   },
 };
 

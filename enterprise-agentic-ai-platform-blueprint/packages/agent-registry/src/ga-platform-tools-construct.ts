@@ -19,6 +19,7 @@ import {
 import { Key } from "aws-cdk-lib/aws-kms";
 import {
   Alias,
+  CfnPermission,
   Code,
   Function as LambdaFunction,
   Runtime,
@@ -27,7 +28,10 @@ import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
-import { PLATFORM_TOOL_CATALOGUE } from "@agenticai/platform-tool-catalogue";
+import {
+  PLATFORM_TOOL_CATALOGUE,
+  resolveTargetArn,
+} from "@agenticai/platform-tool-catalogue";
 
 export interface GaPlatformToolsConstructProps {
   readonly envName: "nonprod" | "prod";
@@ -79,8 +83,10 @@ exports.handler = async (event, context) => {
 `;
 
 export class GaPlatformToolsConstruct extends Construct {
+  /** Target alias ARN for every catalogue tool (stub-built or external). */
   readonly aliasArns: Readonly<Record<string, string>>;
-  readonly aliases: Readonly<Record<string, Alias>>;
+  /** Aliases this construct created; externally provisioned tools are absent. */
+  readonly aliases: Readonly<Partial<Record<string, Alias>>>;
 
   constructor(
     scope: Construct,
@@ -221,6 +227,8 @@ export class GaPlatformToolsConstruct extends Construct {
 
     const aliasArns: Record<string, string> = {};
     const aliases: Record<string, Alias> = {};
+    const gatewayPrincipalId = (principalArn: string): string =>
+      createHash("sha256").update(principalArn).digest("hex").slice(0, 12);
     for (const tool of Object.values(PLATFORM_TOOL_CATALOGUE).sort(
       (left, right) => left.toolId.localeCompare(right.toolId),
     )) {
@@ -228,6 +236,36 @@ export class GaPlatformToolsConstruct extends Construct {
         throw new Error(
           `GaPlatformToolsConstruct: R2 supports Lambda tools only; got ${tool.toolId}.`,
         );
+      }
+      if (tool.externallyProvisioned) {
+        // The owning stack deploys the function and its alias; this
+        // construct only records the real ARN and grants Gateway invoke on
+        // it. Grants are resource-policy statements on that alias, so the
+        // target must live in this (Platform) account.
+        if (
+          tool.targetAccountId !== undefined &&
+          tool.targetAccountId !== stack.account
+        ) {
+          throw new Error(
+            `GaPlatformToolsConstruct: externally provisioned ${tool.toolId} must live in the Platform account.`,
+          );
+        }
+        const targetArn = resolveTargetArn(tool, stack.account, stack.region);
+        if (props.grantGatewayInvokePermissions) {
+          for (const principalArn of environmentGatewayRoleArns) {
+            new CfnPermission(
+              this,
+              `Permission-${props.envName}-${tool.toolId}-${gatewayPrincipalId(principalArn)}`,
+              {
+                action: "lambda:InvokeFunction",
+                functionName: targetArn,
+                principal: principalArn,
+              },
+            );
+          }
+        }
+        aliasArns[tool.toolId] = targetArn;
+        continue;
       }
       const functionName = `agenticai-platform-${props.envName}-${tool.toolId}`;
       const executionRoleName = `AgenticAI-Platform-${props.envName}-${tool.toolId}-exec`;
@@ -287,10 +325,7 @@ export class GaPlatformToolsConstruct extends Construct {
           // toggled off (statements removed) before a granted role is deleted
           // and on again once it exists, so the resource is recreated with the
           // current RoleId rather than replaced next to a stale statement.
-          const principalId = createHash("sha256")
-            .update(principalArn)
-            .digest("hex")
-            .slice(0, 12);
+          const principalId = gatewayPrincipalId(principalArn);
           alias.addPermission(
             `Allow-${props.envName}-${tool.toolId}-${principalId}`.slice(
               0,
