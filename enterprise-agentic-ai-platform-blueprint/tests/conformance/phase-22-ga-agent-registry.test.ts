@@ -258,7 +258,7 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
     template.resourceCountIs("AWS::Lambda::Permission", 0);
   });
 
-  it("fails closed when exact two-environment Gateway role ARNs are absent", () => {
+  it("fails closed when an environment has no Gateway role ARN", () => {
     expect(() => synth("nonprod", true, [])).toThrow(
       /gatewayServiceRoleArns is required/,
     );
@@ -267,13 +267,64 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-other-agent-gw-svc`,
       ]),
-    ).toThrow(/exactly one (?:nonprod|prod) Gateway role ARN is required/);
+    ).toThrow(/at least one prod Gateway role ARN is required/);
     expect(() =>
       synth("nonprod", true, [
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-prod-shared-shared-gw-svc`,
       ]),
     ).toThrow(/nonprod Gateway role must be owned by Workload account/);
+  });
+
+  it("grants every Workstream's Gateway role and retires one without touching the others", () => {
+    const nonprod = (agent: string): string =>
+      `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-${agent}-gw-svc`;
+    const prod = (agent: string): string =>
+      `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-prod-${agent}-gw-svc`;
+    const permissionsByPrincipal = (
+      template: Template,
+    ): Map<string, string[]> => {
+      const out = new Map<string, string[]>();
+      for (const [id, permission] of Object.entries(
+        template.findResources("AWS::Lambda::Permission"),
+      ) as Array<[string, any]>) {
+        const principal = JSON.stringify(permission.Properties.Principal);
+        const agent = /AgenticAI-D03-nonprod-([^"]+)-gw-svc/.exec(
+          principal,
+        )?.[1];
+        expect(agent).toBeDefined();
+        out.set(agent!, [...(out.get(agent!) ?? []), id].sort());
+      }
+      return out;
+    };
+    const toolCount = Object.keys(PLATFORM_TOOL_CATALOGUE).length;
+
+    const both = permissionsByPrincipal(
+      synth("nonprod", true, [
+        nonprod("calanthir-beacon"),
+        nonprod("calanthir-data-mapping"),
+        prod("calanthir-beacon"),
+      ]),
+    );
+    expect([...both.keys()].sort()).toEqual([
+      "calanthir-beacon",
+      "calanthir-data-mapping",
+    ]);
+    expect(both.get("calanthir-beacon")).toHaveLength(toolCount);
+    expect(both.get("calanthir-data-mapping")).toHaveLength(toolCount);
+
+    // Retiring one Workstream removes only its statements; the other keeps
+    // the same logical ids, so CloudFormation leaves its grants in place.
+    const retired = permissionsByPrincipal(
+      synth("nonprod", true, [
+        nonprod("calanthir-beacon"),
+        prod("calanthir-beacon"),
+      ]),
+    );
+    expect([...retired.keys()]).toEqual(["calanthir-beacon"]);
+    expect(retired.get("calanthir-beacon")).toEqual(
+      both.get("calanthir-beacon"),
+    );
   });
 
   it("keeps each alias permission identity stable across a retire-and-regrant cycle", () => {

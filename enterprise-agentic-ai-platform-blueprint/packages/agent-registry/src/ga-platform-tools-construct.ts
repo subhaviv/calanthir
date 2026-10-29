@@ -43,7 +43,10 @@ export interface GaPlatformToolsConstructProps {
   /** Grant aliases only after the Workload role-prerequisite stage succeeds. */
   readonly grantGatewayInvokePermissions?: boolean;
   /**
-   * Exact existing Gateway service-role ARNs produced by the Workload pipeline.
+   * Exact existing Gateway service-role ARNs produced by the Workload pipeline,
+   * one per subscribed Workstream per environment (at least one per
+   * environment when grants are enabled). Each role gets its own permission
+   * statement on every tool alias, keyed on the role ARN.
    *
    * Lambda stores a role principal as its IAM RoleId. Two consequences drive
    * the operating contract around these grants (live-proven 2026-09-24):
@@ -52,9 +55,10 @@ export interface GaPlatformToolsConstructProps {
    *   - while such a statement remains, Lambda rejects EVERY later
    *     `AddPermission` on that alias ("The provided principal was invalid"),
    *     and a CloudFormation replacement creates before it deletes.
-   * Grants must therefore be retired (permission phase disabled) BEFORE the
-   * granted Workstream roles are deleted, and re-granted with the phase
-   * enabled once the roles exist again; there is no single-phase repair.
+   * A Workstream's grants must therefore be retired (its ARN removed from this
+   * list, or the whole permission phase disabled) BEFORE its role is deleted,
+   * and re-granted once the role exists again; there is no single-phase repair.
+   * Removing one ARN leaves every other Workstream's statements untouched.
    */
   readonly gatewayServiceRoleArns?: readonly string[];
   /** Workload account that must own this environment's Gateway role. */
@@ -135,14 +139,9 @@ export class GaPlatformToolsConstruct extends Construct {
       "^arn:(?:aws|aws-us-gov|aws-cn):iam::(\\d{12}):role/" +
         "AgenticAI-D03-(nonprod|prod)-[A-Za-z0-9+=,.@_-]+-[A-Za-z0-9+=,.@_-]+-gw-svc$",
     );
-    if (
-      props.grantGatewayInvokePermissions &&
-      gatewayServiceRoleArns.length !== 2
-    ) {
-      throw new Error(
-        "GaPlatformToolsConstruct: exactly one nonprod and one prod Gateway role ARN are required.",
-      );
-    }
+    // One Gateway service role per subscribed Workstream, per environment.
+    // Each environment needs at least one so nonprod and prod stay in step;
+    // there is no upper bound beyond Lambda's resource-policy size.
     for (const roleArn of gatewayServiceRoleArns) {
       const match = rolePattern.exec(roleArn);
       if (!match || !workloadAccountIds.includes(match[1])) {
@@ -163,9 +162,9 @@ export class GaPlatformToolsConstruct extends Construct {
       const roleCount = gatewayServiceRoleArns.filter((roleArn) =>
         roleArn.includes(`/AgenticAI-D03-${environment}-`),
       ).length;
-      if (props.grantGatewayInvokePermissions && roleCount !== 1) {
+      if (props.grantGatewayInvokePermissions && roleCount === 0) {
         throw new Error(
-          `GaPlatformToolsConstruct: exactly one ${environment} Gateway role ARN is required.`,
+          `GaPlatformToolsConstruct: at least one ${environment} Gateway role ARN is required.`,
         );
       }
     }

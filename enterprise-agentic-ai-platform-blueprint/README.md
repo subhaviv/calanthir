@@ -496,6 +496,8 @@ agenticai/enableGaGatewayInvokePermissions=true
 agenticai/gaGatewayServiceRoleArns=[<NONPROD_ROLE_ARN>,<PROD_ROLE_ARN>]
 ```
 
+The list holds every subscribed Workstream's roles, at least one per environment. When onboarding another Workstream, append its two role ARNs and keep the existing ones; removing an ARN retires only that Workstream's grants, and must happen before its roles are deleted.
+
 Run the Platform pipeline and verify each Lambda alias policy names its matching role ARN. Only then approve `GatewayPermissionReady`.
 
 The Workload pipeline deploys nonproduction, invokes the deployed Runtime through the evaluation gate, and pauses before production. Review evaluation and adversarial evidence before approving production.
