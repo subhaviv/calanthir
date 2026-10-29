@@ -89,17 +89,6 @@ export interface RegistryStackProps extends StackProps {
    * Pass via context key `agenticai/registerEhrTool=true`.
    */
   readonly registerEhrTool?: boolean;
-
-  /**
-   * When true, register the Strands Decider tool (DeciderAPI) as a CUSTOM GA
-   * registry record. The tool is a gateway Lambda target OWNED BY StrandsDeciderStack
-   * (strands-decider-decide), which invokes a private SageMaker endpoint over
-   * PrivateLink. It reads no enterprise data and is permitted for any
-   * authenticated caller by gateway Cedar (policies/decider-authenticated.cedar).
-   *
-   * Pass via context key `agenticai/registerDeciderTool=true`.
-   */
-  readonly registerDeciderTool?: boolean;
 }
 
 export class RegistryStack extends Stack {
@@ -593,99 +582,6 @@ export class RegistryStack extends Stack {
       new CfnOutput(this, "EhrToolRecordId-tool-ehr-fhir", {
         value: ehrRecord.getAtt("RecordId").toString(),
         description: "GA Registry record ID for the EhrAPI (clinical-staff) tool.",
-      });
-    }
-
-    // ---- Strands Decider tool (DeciderAPI) — CUSTOM lambda record -----------
-    //
-    // DeciderAPI is a gateway Lambda target whose function is owned by
-    // StrandsDeciderStack (strands-decider-decide). One tool, `decide`, takes a
-    // System-One request {state, questions} and returns calibrated choice /
-    // noul / score answers from a private SageMaker endpoint (PrivateLink). It
-    // reads no enterprise data, so gateway Cedar permits any authenticated
-    // caller (policies/decider-authenticated.cedar). This record makes it
-    // discoverable/auditable; enforcement stays on the gateway.
-    if (props.registerDeciderTool) {
-      const deciderDescription =
-        "Strands Decider decision model: calibrated choice, yes/no and rubric-score answers about caller-supplied text, served from a private in-account SageMaker endpoint. Any authenticated caller via the enterprise governance gateway.";
-
-      const deciderGovernance = {
-        schemaVersion: "agenticai.tool-governance/1.0",
-        toolId: "tool-strands-decider",
-        description: deciderDescription,
-        desiredApprovalStatus: "approved",
-        target: {
-          type: "lambda",
-          // Function owned by another stack; the gateway imports it by ARN.
-          lambdaFunctionName: "strands-decider-decide",
-          ownerStack: "StrandsDeciderStack",
-          gatewayStack: "enterprise-mcp-governance-gateway/EnterpriseMcpGatewayStack",
-          vpcAttached: true,
-        },
-        mcp: {
-          server: "DeciderAPI",
-          tools: [
-            {
-              toolName: "DeciderAPI___decide",
-              description:
-                "Ask typed questions (choice | noul | score) about a state in one call; every choice/score answer carries a calibrated confidence.",
-            },
-          ],
-        },
-        authorization: {
-          // Gateway default-deny + an explicit permit for any authenticated
-          // OAuth user (mirrors policies/decider-authenticated.cedar).
-          defaultDecision: "DENY",
-          allowedGroups: [],
-          allowedSubjects: ["*authenticated*"],
-          readOnly: true,
-          dataClassification: "internal",
-          entitlement:
-            "any valid access token accepted by the gateway; enforced by gateway Cedar.",
-        },
-        ownership: {
-          ownerTeam: "platform",
-          costCentre: props.costCentre,
-        },
-        metadata: {
-          international: false,
-          hostedBy: "self-hosted-sagemaker-endpoint",
-          model: "strands-decider-2B-hobson-v19",
-          phi: false,
-        },
-      };
-
-      const deciderRecord = new CfnResource(this, "DeciderToolRecord-tool-strands-decider", {
-        type: "AWS::AgentRegistry::RegistryRecord",
-        properties: {
-          RegistryId: this.gaRegistry.registryId,
-          Name: "tool-strands-decider",
-          DisplayName: "DeciderAPI",
-          Description: deciderDescription,
-          RecordType: "CUSTOM",
-          RecordVersion: "1.0.0",
-          Descriptors: {
-            Custom: {
-              Data: JSON.stringify(deciderGovernance),
-            },
-          },
-          Tags: [
-            { Key: "application-id", Value: props.applicationId },
-            { Key: "agent-id", Value: "decider-tool" },
-            { Key: "tenant-id", Value: "platform" },
-            { Key: "cost-centre", Value: props.costCentre },
-            { Key: "environment", Value: props.envName },
-            { Key: "owner-team", Value: "platform" },
-            { Key: "data-classification", Value: "internal" },
-          ],
-        },
-      });
-      deciderRecord.addDependsOn(this.gaRegistry.registry);
-      deciderRecord.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
-
-      new CfnOutput(this, "DeciderToolRecordId-tool-strands-decider", {
-        value: deciderRecord.getAtt("RecordId").toString(),
-        description: "GA Registry record ID for the DeciderAPI (Strands Decider) tool.",
       });
     }
   }
