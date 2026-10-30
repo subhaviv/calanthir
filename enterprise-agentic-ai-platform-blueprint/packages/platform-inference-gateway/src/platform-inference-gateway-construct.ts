@@ -849,6 +849,11 @@ export class PlatformInferenceGatewayConstruct extends Construct {
             reason:
               'SEC-005: the provider framework role invokes exactly its onEvent function; CDK renders the grant as a function ARN which cdk-nag flags generically.',
           },
+          {
+            id: 'NIST.800.53.R5-IAMNoInlinePolicy',
+            reason:
+              'SEC-005: the invoke grant is lifecycle-bound to this framework role and scoped to its single onEvent function.',
+          },
         ],
         true,
       );
@@ -860,7 +865,48 @@ export class PlatformInferenceGatewayConstruct extends Construct {
             reason:
               'SEC-005: AWSLambdaBasicExecutionRole is the standard log-write policy for a custom-resource Lambda.',
           },
+          {
+            id: 'NIST.800.53.R5-IAMNoInlinePolicy',
+            reason:
+              'SEC-005: the inline policy is lifecycle-bound to this role and scoped to this user pool and this secret.',
+          },
         ],
+        true,
+      );
+      // Provisioning-time custom-resource Lambdas: invoked only by
+      // CloudFormation during deploy/rollback.
+      const provisioningLambdaSuppressions = [
+        {
+          id: 'NIST.800.53.R5-LambdaConcurrency',
+          reason:
+            'SEC-007: CFN custom-resource Lambda, provisioning-time only; a concurrency cap would break deploys.',
+        },
+        {
+          id: 'NIST.800.53.R5-LambdaDLQ',
+          reason:
+            'SEC-008: CFN custom-resource Lambda; failures surface via stack events.',
+        },
+        {
+          id: 'NIST.800.53.R5-LambdaInsideVPC',
+          reason:
+            'SEC-009: calls only the Cognito and Secrets Manager control planes during deploy.',
+        },
+      ];
+      NagSuppressions.addResourceSuppressions(
+        populatorFn,
+        [
+          ...provisioningLambdaSuppressions,
+          {
+            id: 'AwsSolutions-L1',
+            reason:
+              'SEC-031: pinned to the Python 3.13 runtime shipped with this release; bumped deliberately.',
+          },
+        ],
+        true,
+      );
+      NagSuppressions.addResourceSuppressions(
+        populatorProvider,
+        provisioningLambdaSuppressions,
         true,
       );
       NagSuppressions.addResourceSuppressions(
@@ -870,6 +916,11 @@ export class PlatformInferenceGatewayConstruct extends Construct {
             id: 'AwsSolutions-SMG4',
             reason:
               'SEC-030: this secret mirrors a Cognito app-client secret whose rotation is owned by Cognito; automatic Secrets Manager rotation would desynchronise the two. Rotation is handled by rotating the Cognito client secret and redeploying.',
+          },
+          {
+            id: 'NIST.800.53.R5-SecretsManagerRotationEnabled',
+            reason:
+              'SEC-030: rotation is owned by Cognito (see AwsSolutions-SMG4 above).',
           },
         ],
         true,

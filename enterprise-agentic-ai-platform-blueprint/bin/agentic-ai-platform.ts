@@ -487,6 +487,11 @@ switch (stage) {
           app.node.tryGetContext("agenticai/registerEhrTool") === true ||
           app.node.tryGetContext("agenticai/registerEhrTool") === "true",
       });
+      const inferenceM2mReaderAccountId = app.node.tryGetContext(
+        platformEnvName === "nonprod"
+          ? "agenticai/workloadNonprodAccountId"
+          : "agenticai/workloadProdAccountId",
+      ) as string | undefined;
       const inferenceGatewayStack = new InferenceGatewayStack(
         app,
         "aifactory-calanthir-Platform-InferenceGatewayStack",
@@ -504,6 +509,13 @@ switch (stage) {
             guardrailVersion: guardrailStack.baseline.guardrail.attrVersion,
             guardrailArn: guardrailStack.baseline.guardrail.attrGuardrailArn,
           },
+          // Same reader account the platform pipeline passes
+          // (platform-pipeline-stack.ts). Without it a local platform-stage
+          // deploy would delete the cross-account M2M client + secret that
+          // generated agents use to authenticate to this gateway.
+          m2mSecretReaderAccountIds: inferenceM2mReaderAccountId
+            ? [inferenceM2mReaderAccountId]
+            : undefined,
         },
       );
       inferenceGatewayStack.addDependency(guardrailStack);
