@@ -51,6 +51,7 @@ import {
   type GatewayPolicyEngineMode,
 } from "../apps/platform-account/lib/d03-workstream-gateway-stack";
 import { GapClosureStack } from "../apps/workload-account/lib/gap-closure-stack";
+import { D03WorkstreamRegistryRolesStack } from "../apps/workload-account/lib/d03-workstream-registry-roles-stack";
 import type { InferenceModelRateLimit } from "@agenticai/platform-inference-gateway";
 import { resolveDeploymentRegion } from "@agenticai/platform-baselines";
 
@@ -852,6 +853,110 @@ switch (stage) {
     );
     break;
   }
+  case "lob-tool-gateway": {
+    // Platform-owned tool Gateway for ONE S3/LOB agent (tenant/agent), run at
+    // agent onboarding. The S3 LOB pipeline deploys only the LOB's own
+    // aws-cdk-lib app, which cannot build a Registry-bound Gateway, so the
+    // Platform deploys these two stacks into the workload account instead
+    // (CDK bootstrap trust). Order, as separate deploys:
+    //   1. RegistryRoles  (gw-svc, RegistryValidator, per-agent GatewayAdmin)
+    //   2. RegistryStack with the gw-svc ARN in agenticai/gaGatewayServiceRoleArns
+    //   3. ToolGateway    (AWS_IAM inbound, PolicyEngine ENFORCE, LOB runtime role(s) only)
+    // Every input is an explicit `agenticai/lobGateway/*` key so a missing flag
+    // cannot fall back to this repo's own cdk.context.json tenant/agent.
+    const region = deploymentRegion();
+    const ctx = (key: string): string | undefined => {
+      const value = app.node.tryGetContext(`agenticai/lobGateway/${key}`);
+      return typeof value === "string" && value.length > 0 ? value : undefined;
+    };
+    const tenantId = ctx("tenantId");
+    const agentId = ctx("agentId");
+    const envName = ctx("envName") ?? "nonprod";
+    const workloadAccountId = ctx("workloadAccountId");
+    const platformAccountId = ctx("platformAccountId");
+    const contextFile = ctx("registryContextFile");
+    const expectedToolIds = stringArrayContext("agenticai/lobGateway/toolIds");
+    const callerRoleArns = stringArrayContext(
+      "agenticai/lobGateway/callerRoleArns",
+    );
+    const missing = [
+      ["tenantId", tenantId],
+      ["agentId", agentId],
+      ["workloadAccountId", workloadAccountId],
+      ["platformAccountId", platformAccountId],
+      ["registryContextFile", contextFile],
+    ]
+      .filter(([, value]) => !value)
+      .map(([key]) => `agenticai/lobGateway/${key}`);
+    if (expectedToolIds.length === 0) missing.push("agenticai/lobGateway/toolIds");
+    if (callerRoleArns.length === 0)
+      missing.push("agenticai/lobGateway/callerRoleArns");
+    if (missing.length) {
+      throw new Error(`lob-tool-gateway stage requires: ${missing.join(", ")}`);
+    }
+    if (envName !== "nonprod" && envName !== "prod") {
+      throw new Error("agenticai/lobGateway/envName must be nonprod|prod");
+    }
+    for (const arn of callerRoleArns) {
+      if (!new RegExp(`^arn:aws:iam::${workloadAccountId}:role/[A-Za-z0-9+=,.@_-]+$`).test(arn)) {
+        throw new Error(
+          `lob-tool-gateway: caller '${arn}' must be a pathless IAM role in workload account ${workloadAccountId}.`,
+        );
+      }
+    }
+    const registryContext = gaRegistryContextFromFile(
+      "agenticai/lobGateway/registryContextFile",
+      {
+        environment: envName,
+        platformAccountId: platformAccountId!,
+        expectedToolIds,
+      },
+    );
+    if (!registryContext) {
+      throw new Error("lob-tool-gateway: registry context file produced no context.");
+    }
+    const applicationId = ctx("applicationId") ?? tenantId!;
+    const costCentre = ctx("costCentre") ?? tenantId!;
+    const env = { account: workloadAccountId!, region };
+    const rolePrefix = `arn:aws:iam::${workloadAccountId}:role/AgenticAI-D03-${envName}-${tenantId}-${agentId}`;
+
+    const roles = new D03WorkstreamRegistryRolesStack(
+      app,
+      `AgenticAI-${tenantId}-${agentId}-${envName}-RegistryRoles`,
+      {
+        env,
+        envName,
+        tenantId: tenantId!,
+        agentId: agentId!,
+        applicationId,
+        costCentre,
+        registryContext,
+        perAgentGatewayAdmin: true,
+      },
+    );
+    const gateway = new D03WorkstreamGatewayStack(
+      app,
+      `AgenticAI-${tenantId}-${agentId}-${envName}-ToolGateway`,
+      {
+        env,
+        envName,
+        tenantId: tenantId!,
+        agentId: agentId!,
+        applicationId,
+        costCentre,
+        workloadAccountId: workloadAccountId!,
+        platformAccountId: platformAccountId!,
+        gaRegistryContext: registryContext,
+        policyEngineMode: "ENFORCE",
+        policyEngineIamRoleArns: callerRoleArns,
+        gatewayServiceRoleArnOverride: `${rolePrefix}-gw-svc`,
+        registryValidatorRoleArnOverride: `${rolePrefix}-RegistryValidator`,
+        crExecRoleArnOverride: `${rolePrefix}-GatewayAdmin`,
+      },
+    );
+    gateway.addDependency(roles);
+    break;
+  }
   case "pipeline": {
     // Root CDK Pipelines. Each deployed pipeline self-synthesizes only its own
     // root stack; this prevents the Platform pipeline from needing Workload
@@ -1460,11 +1565,11 @@ switch (stage) {
   }
   case undefined:
     throw new Error(
-      "Missing required CDK context 'stage'. Pass --context stage=<management|platform|workload|sandbox|d03-platform|d03-workload|d03-workstream-gateway|pipeline|gap-closure>.",
+      "Missing required CDK context 'stage'. Pass --context stage=<management|platform|workload|sandbox|d03-platform|d03-workload|d03-workstream-gateway|lob-tool-gateway|pipeline|gap-closure>.",
     );
   default:
     throw new Error(
-      `Unknown stage '${stage}'. Valid stages: management | platform | workload | sandbox | d03-platform | d03-workload | d03-workstream-gateway | pipeline | gap-closure.`,
+      `Unknown stage '${stage}'. Valid stages: management | platform | workload | sandbox | d03-platform | d03-workload | d03-workstream-gateway | lob-tool-gateway | pipeline | gap-closure.`,
     );
 }
 

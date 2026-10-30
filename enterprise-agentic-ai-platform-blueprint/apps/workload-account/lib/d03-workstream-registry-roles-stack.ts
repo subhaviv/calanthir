@@ -49,6 +49,15 @@ export interface D03WorkstreamRegistryRolesStackProps extends StackProps {
    * M2M secret -- only the RuntimeMemory custom resource does.
    */
   readonly generatedAgentGrants?: GeneratedAgentRuntimeGrants;
+  /**
+   * Name the GatewayAdmin provisioning role per agent
+   * (`AgenticAI-D03-<env>-<tenant>-<agent>-GatewayAdmin`) instead of the
+   * default one-per-environment `AgenticAI-D03-<env>-GatewayAdmin`. Required
+   * when several Workstreams share one workload account: the per-environment
+   * name exists once per account, so a second roles stack would collide on
+   * it. Both names match SCP-09's `AgenticAI-D03-*-GatewayAdmin` exemption.
+   */
+  readonly perAgentGatewayAdmin?: boolean;
 }
 
 /** Inputs for the opt-in generated-agent grants on the Runtime role. */
@@ -86,7 +95,9 @@ export class D03WorkstreamRegistryRolesStack extends Stack {
     const names = {
       gateway: `AgenticAI-D03-${base}-gw-svc`,
       validator: `AgenticAI-D03-${base}-RegistryValidator`,
-      admin: `AgenticAI-D03-${props.envName}-GatewayAdmin`,
+      admin: props.perAgentGatewayAdmin
+        ? `AgenticAI-D03-${base}-GatewayAdmin`
+        : `AgenticAI-D03-${props.envName}-GatewayAdmin`,
       runtime: `AgenticAI-D03-${base}-runtime`,
     };
     for (const [kind, name] of Object.entries(names)) {
@@ -230,6 +241,11 @@ export class D03WorkstreamRegistryRolesStack extends Stack {
           reason:
             "SEC-010: AWSLambdaBasicExecutionRole is the documented logging policy for the validator Lambda.",
         },
+        {
+          id: "NIST.800.53.R5-IAMNoInlinePolicy",
+          reason:
+            "SEC-005: Single-purpose validator role; its only grant (assume the Platform RegistryReader role) stays inline and visible on the role.",
+        },
       ],
       true,
     );
@@ -248,6 +264,11 @@ export class D03WorkstreamRegistryRolesStack extends Stack {
           id: "AwsSolutions-IAM5",
           reason:
             "SEC-028: The AgentCore control-plane action family requires Resource:* during resource creation; the role is Workstream-local, Lambda-trusted, pipeline-created, and SCP-09-name-bound.",
+        },
+        {
+          id: "NIST.800.53.R5-IAMNoInlinePolicy",
+          reason:
+            "SEC-005: Single-purpose provisioning role; the AgentCore grant and the PassRole bound to this Workstream's gateway service role stay inline and visible on the role.",
         },
       ],
       true,

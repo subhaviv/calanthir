@@ -42,7 +42,7 @@ describe('EMEA Region resolution', () => {
       'utf8',
     );
     expect(source).not.toMatch(/CDK_DEFAULT_REGION\s*\?\?/);
-    expect(source.match(/deploymentRegion\(\)[,;]/g)).toHaveLength(8);
+    expect(source.match(/deploymentRegion\(\)[,;]/g)).toHaveLength(9);
   });
 
   it('keeps repository context from silently pinning a deployment Region', () => {

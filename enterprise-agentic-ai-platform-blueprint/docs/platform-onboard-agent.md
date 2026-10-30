@@ -56,7 +56,9 @@ The LOB gives you the agent's runtime ID / endpoint. Add an
 - governance tags: application-id, tenant-id, cost-centre, owner-team
 Wire the endpoint through `PlatformPipelineStack → PlatformDeploymentStage →
 RegistryStack` via a context key; commit + push.
-- **Nonprod auto-approves; prod needs a curator.** No registry record = NOT discoverable.
+- **A new record is `DRAFT` until it is submitted.** In nonprod the registry approves on
+  submit (`APPROVE_ALL`); agent records are not submitted by the stack, so submit yours
+  (see PLATFORM_SETUP.md). Prod needs a curator. No APPROVED record = NOT discoverable.
 
 ## Traps
 - **Runnable ≠ discoverable.** The LOB's deploy makes the agent invocable; it appears

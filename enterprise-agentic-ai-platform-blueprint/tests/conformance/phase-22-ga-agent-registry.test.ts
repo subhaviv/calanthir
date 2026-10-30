@@ -230,6 +230,9 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
         .filter((logicalId) => !(logicalId in baselineResources))
         .sort(),
     ).toEqual([rotatedEcho]);
+    const [echoSubmitId] = Object.entries(
+      rotatedTemplate.findResources("Custom::AgentRegistryRecordSubmission"),
+    ).find(([, resource]: [string, any]) => resource.Properties.toolId === "tool-echo")!;
     expect(
       Object.keys(baselineResources)
         .filter(
@@ -239,7 +242,7 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
               JSON.stringify(rotatedResources[logicalId]),
         )
         .sort(),
-    ).toEqual([echoPointerId]);
+    ).toEqual([echoPointerId, echoSubmitId].sort());
   });
 
   it("rejects invalid or unknown record generations", () => {
@@ -253,21 +256,51 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
 
   it("creates tools without invoke permissions before Workstream roles exist", () => {
     const template = synth("nonprod", false);
-    template.resourceCountIs("AWS::Lambda::Function", STUB_TOOL_IDS.length);
+    // Tool stubs plus the nonprod record-submitter: its handler and the
+    // Provider framework handler.
+    template.resourceCountIs("AWS::Lambda::Function", STUB_TOOL_IDS.length + 2);
     template.resourceCountIs("AWS::Lambda::Alias", STUB_TOOL_IDS.length);
     template.resourceCountIs("AWS::Lambda::Permission", 0);
+  });
+
+  it("submits every approved catalogue record in nonprod and none in prod", () => {
+    const approved = Object.values(PLATFORM_TOOL_CATALOGUE)
+      .filter((tool) => tool.approvalStatus === "approved")
+      .map((tool) => tool.toolId)
+      .sort();
+    const nonprod = synth("nonprod", false).findResources(
+      "Custom::AgentRegistryRecordSubmission",
+    );
+    expect(
+      Object.values(nonprod)
+        .map((resource: any) => resource.Properties.toolId)
+        .sort(),
+    ).toEqual(approved);
+    for (const resource of Object.values(nonprod) as any[]) {
+      expect(resource.Properties.recordId["Fn::GetAtt"][1]).toBe("RecordId");
+      expect(resource.Properties.descriptorSha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    synth("prod", false).resourceCountIs("Custom::AgentRegistryRecordSubmission", 0);
   });
 
   it("fails closed when an environment has no Gateway role ARN", () => {
     expect(() => synth("nonprod", true, [])).toThrow(
       /gatewayServiceRoleArns is required/,
     );
+    // Only this Registry environment's roles are required (a single-Registry
+    // Platform has no prod context to build a prod Gateway role from)...
     expect(() =>
       synth("nonprod", true, [
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-other-agent-gw-svc`,
       ]),
-    ).toThrow(/at least one prod Gateway role ARN is required/);
+    ).not.toThrow();
+    // ...and a list with none for this environment still fails closed.
+    expect(() =>
+      synth("nonprod", true, [
+        `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-prod-shared-shared-gw-svc`,
+      ]),
+    ).toThrow(/no nonprod Gateway role ARN was supplied/);
     expect(() =>
       synth("nonprod", true, [
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,
