@@ -287,12 +287,20 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
     expect(() => synth("nonprod", true, [])).toThrow(
       /gatewayServiceRoleArns is required/,
     );
+    // Only this Registry environment's roles are required (a single-Registry
+    // Platform has no prod context to build a prod Gateway role from)...
     expect(() =>
       synth("nonprod", true, [
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[0]}:role/AgenticAI-D03-nonprod-other-agent-gw-svc`,
       ]),
-    ).toThrow(/at least one prod Gateway role ARN is required/);
+    ).not.toThrow();
+    // ...and a list with none for this environment still fails closed.
+    expect(() =>
+      synth("nonprod", true, [
+        `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-prod-shared-shared-gw-svc`,
+      ]),
+    ).toThrow(/no nonprod Gateway role ARN was supplied/);
     expect(() =>
       synth("nonprod", true, [
         `arn:aws:iam::${WORKLOAD_ACCOUNT_IDS[1]}:role/AgenticAI-D03-nonprod-shared-shared-gw-svc`,

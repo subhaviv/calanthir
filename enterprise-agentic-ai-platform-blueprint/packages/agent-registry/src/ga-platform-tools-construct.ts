@@ -139,9 +139,11 @@ export class GaPlatformToolsConstruct extends Construct {
       "^arn:(?:aws|aws-us-gov|aws-cn):iam::(\\d{12}):role/" +
         "AgenticAI-D03-(nonprod|prod)-[A-Za-z0-9+=,.@_-]+-[A-Za-z0-9+=,.@_-]+-gw-svc$",
     );
-    // One Gateway service role per subscribed Workstream, per environment.
-    // Each environment needs at least one so nonprod and prod stay in step;
-    // there is no upper bound beyond Lambda's resource-policy size.
+    // One Gateway service role per subscribed Workstream. Only this Registry
+    // environment's roles are granted below, so only they are required: a
+    // Platform that runs a single (nonprod) Registry has no prod Registry
+    // context from which a prod Gateway role could even be built. Prod role
+    // ARNs may still be listed and are validated, but are not granted here.
     for (const roleArn of gatewayServiceRoleArns) {
       const match = rolePattern.exec(roleArn);
       if (!match || !workloadAccountIds.includes(match[1])) {
@@ -155,16 +157,6 @@ export class GaPlatformToolsConstruct extends Construct {
       ) {
         throw new Error(
           `GaPlatformToolsConstruct: ${props.envName} Gateway role must be owned by Workload account ${props.gatewayWorkloadAccountId}.`,
-        );
-      }
-    }
-    for (const environment of ["nonprod", "prod"] as const) {
-      const roleCount = gatewayServiceRoleArns.filter((roleArn) =>
-        roleArn.includes(`/AgenticAI-D03-${environment}-`),
-      ).length;
-      if (props.grantGatewayInvokePermissions && roleCount === 0) {
-        throw new Error(
-          `GaPlatformToolsConstruct: at least one ${environment} Gateway role ARN is required.`,
         );
       }
     }
