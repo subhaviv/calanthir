@@ -282,7 +282,12 @@ if (props.myAgentA2aEndpointUrl) {
 
 Wire the endpoint URL through `PlatformPipelineStack` → `PlatformDeploymentStage` → `RegistryStack` via a `cdk.context.json` key, then commit and push. The platform pipeline deploys it.
 
-In nonprod the registry auto-approves records. In prod a curator must approve before the record becomes discoverable.
+CloudFormation creates every registry record (and returns it on every descriptor update) in `DRAFT`. The registry's `APPROVE_ALL` rule only applies when a record is **submitted** for approval:
+
+- **Catalogue tool records** (`PLATFORM_TOOL_CATALOGUE` entries with `approvalStatus: "approved"`) are submitted by the RegistryStack itself in nonprod, so they end `APPROVED` and Workstream Gateways can subscribe to them. The deploy fails if one does not.
+- **Agent records and the hand-written tool records** in `registry-stack.ts` (A2A agents, HCLS, EHR) are not submitted automatically. Submit one with boto3 (the AWS CLI has no `agent-registry-control` command yet):
+  `python3 -c "import boto3; boto3.Session(profile_name='agentops-publisher', region_name='us-east-1').client('agent-registry-control').submit_registry_record_for_approval(registryId='<registry-id>', recordId='<record-id>')"`
+- **Prod:** nothing is submitted automatically; a curator submits and approves.
 
 > **Changing `RecordType` on an existing record** cannot be done in-place. Delete first:
 > ```bash

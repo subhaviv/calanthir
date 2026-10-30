@@ -230,6 +230,9 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
         .filter((logicalId) => !(logicalId in baselineResources))
         .sort(),
     ).toEqual([rotatedEcho]);
+    const [echoSubmitId] = Object.entries(
+      rotatedTemplate.findResources("Custom::AgentRegistryRecordSubmission"),
+    ).find(([, resource]: [string, any]) => resource.Properties.toolId === "tool-echo")!;
     expect(
       Object.keys(baselineResources)
         .filter(
@@ -239,7 +242,7 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
               JSON.stringify(rotatedResources[logicalId]),
         )
         .sort(),
-    ).toEqual([echoPointerId]);
+    ).toEqual([echoPointerId, echoSubmitId].sort());
   });
 
   it("rejects invalid or unknown record generations", () => {
@@ -253,9 +256,31 @@ describe("Phase 22 — GA Registry producer remains additive", () => {
 
   it("creates tools without invoke permissions before Workstream roles exist", () => {
     const template = synth("nonprod", false);
-    template.resourceCountIs("AWS::Lambda::Function", STUB_TOOL_IDS.length);
+    // Tool stubs plus the nonprod record-submitter: its handler and the
+    // Provider framework handler.
+    template.resourceCountIs("AWS::Lambda::Function", STUB_TOOL_IDS.length + 2);
     template.resourceCountIs("AWS::Lambda::Alias", STUB_TOOL_IDS.length);
     template.resourceCountIs("AWS::Lambda::Permission", 0);
+  });
+
+  it("submits every approved catalogue record in nonprod and none in prod", () => {
+    const approved = Object.values(PLATFORM_TOOL_CATALOGUE)
+      .filter((tool) => tool.approvalStatus === "approved")
+      .map((tool) => tool.toolId)
+      .sort();
+    const nonprod = synth("nonprod", false).findResources(
+      "Custom::AgentRegistryRecordSubmission",
+    );
+    expect(
+      Object.values(nonprod)
+        .map((resource: any) => resource.Properties.toolId)
+        .sort(),
+    ).toEqual(approved);
+    for (const resource of Object.values(nonprod) as any[]) {
+      expect(resource.Properties.recordId["Fn::GetAtt"][1]).toBe("RecordId");
+      expect(resource.Properties.descriptorSha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    synth("prod", false).resourceCountIs("Custom::AgentRegistryRecordSubmission", 0);
   });
 
   it("fails closed when an environment has no Gateway role ARN", () => {

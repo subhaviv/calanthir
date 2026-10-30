@@ -10,6 +10,7 @@
 import {
   CfnOutput,
   CfnResource,
+  CustomResource,
   Duration,
   RemovalPolicy,
   Stack,
@@ -21,10 +22,15 @@ import {
   CompositePrincipal,
   Effect,
   ManagedPolicy,
+  PolicyDocument,
   PolicyStatement,
   Role,
+  ServicePrincipal,
 } from "aws-cdk-lib/aws-iam";
+import { Code, Function as LambdaFunction, Runtime } from "aws-cdk-lib/aws-lambda";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { Provider } from "aws-cdk-lib/custom-resources";
+import { createHash } from "node:crypto";
 import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
@@ -230,6 +236,11 @@ export class GaPlatformRegistryConstruct extends Construct {
     this.registryArn = this.registry.getAtt("RegistryArn").toString();
 
     const records: Record<string, CfnResource> = {};
+    const toSubmit: {
+      toolId: string;
+      record: CfnResource;
+      descriptorSha256: string;
+    }[] = [];
     const recordIdParameters: Record<string, StringParameter> = {};
     this.parameterPrefix = `/agenticai/registry/v1/${props.envName}`;
 
@@ -283,6 +294,15 @@ export class GaPlatformRegistryConstruct extends Construct {
       record.addDependency(this.registry);
       record.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
       records[tool.toolId] = record;
+      if (tool.approvalStatus === "approved") {
+        toSubmit.push({
+          toolId: tool.toolId,
+          record,
+          descriptorSha256: createHash("sha256")
+            .update(JSON.stringify(governance), "utf8")
+            .digest("hex"),
+        });
+      }
       recordIdParameters[tool.toolId] = parameter(
         `RecordIdParameter-${tool.toolId}`,
         `records/${tool.toolId}/id`,
@@ -292,6 +312,105 @@ export class GaPlatformRegistryConstruct extends Construct {
     }
     this.records = records;
     this.recordIdParameters = recordIdParameters;
+
+    // CloudFormation creates (and every descriptor update returns) a record in
+    // DRAFT. The Registry's APPROVE_ALL rule applies only on submission, so a
+    // record nothing submits never becomes APPROVED and no Workstream Gateway
+    // can subscribe to it. In nonprod, submit every catalogue record whose
+    // desired status is `approved`; APPROVE_ALL then approves it. Prod is left
+    // to a curator, because submitting there would auto-approve too.
+    if (props.envName === "nonprod" && toSubmit.length > 0) {
+      const submitRole = new Role(this, "RecordSubmitterRole", {
+        assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
+        description: `Submits approved catalogue records in the ${props.envName} GA Agent Registry.`,
+        managedPolicies: [
+          ManagedPolicy.fromAwsManagedPolicyName(
+            "service-role/AWSLambdaBasicExecutionRole",
+          ),
+        ],
+        inlinePolicies: {
+          SubmitCatalogueRecords: new PolicyDocument({
+            statements: [
+              new PolicyStatement({
+                sid: "SubmitCatalogueRecords",
+                effect: Effect.ALLOW,
+                actions: [
+                  "agent-registry:GetRegistryRecord",
+                  "agent-registry:SubmitRegistryRecordForApproval",
+                ],
+                resources: [`${this.registryArn}/record/*`],
+              }),
+            ],
+          }),
+        },
+      });
+      const submitFn = new LambdaFunction(this, "RecordSubmitterFn", {
+        runtime: Runtime.NODEJS_22_X,
+        handler: "index.handler",
+        timeout: Duration.minutes(2),
+        memorySize: 256,
+        description:
+          "Submits DRAFT catalogue records for approval (APPROVE_ALL approves on submit).",
+        code: Code.fromInline(RECORD_SUBMITTER_HANDLER),
+        role: submitRole,
+      });
+      const submitProvider = new Provider(this, "RecordSubmitterProvider", {
+        onEventHandler: submitFn,
+      });
+      for (const item of toSubmit) {
+        new CustomResource(this, `SubmitRecord-${item.toolId}`, {
+          serviceToken: submitProvider.serviceToken,
+          resourceType: "Custom::AgentRegistryRecordSubmission",
+          properties: {
+            registryId: this.registryId,
+            recordId: item.record.getAtt("RecordId").toString(),
+            toolId: item.toolId,
+            // Re-run on every descriptor change: an update puts the record
+            // back in DRAFT.
+            descriptorSha256: item.descriptorSha256,
+          },
+        });
+      }
+      NagSuppressions.addResourceSuppressions(
+        [submitRole, submitFn, submitProvider],
+        [
+          {
+            id: "AwsSolutions-IAM4",
+            reason:
+              "SEC-010: AWSLambdaBasicExecutionRole is the documented logging policy for the record-submitter Lambda and CDK provider framework Lambdas.",
+          },
+          {
+            id: "AwsSolutions-IAM5",
+            reason:
+              "SEC-030: RegistryRecord IDs are service-generated, so the wildcard is constrained under one Registry ARN; SEC-029: the Provider framework invokes versions of the single submitter Lambda.",
+          },
+          {
+            id: "AwsSolutions-L1",
+            reason:
+              "SEC-006: Node.js 22 for the inline submitter; the Provider framework runtime is managed by aws-cdk-lib.",
+          },
+          {
+            id: "NIST.800.53.R5-LambdaConcurrency",
+            reason: "SEC-007: Provisioning-time Lambda invoked only by CloudFormation.",
+          },
+          {
+            id: "NIST.800.53.R5-LambdaDLQ",
+            reason: "SEC-008: CloudFormation surfaces custom-resource failures.",
+          },
+          {
+            id: "NIST.800.53.R5-LambdaInsideVPC",
+            reason:
+              "SEC-009: The GA Agent Registry control plane is reached only during deployment.",
+          },
+          {
+            id: "NIST.800.53.R5-IAMNoInlinePolicy",
+            reason:
+              "The submitter's single-statement grant is inline so the Registry reader policy stays this stack's only customer managed policy; the CDK Provider framework attaches its own invoke grant as a default policy.",
+          },
+        ],
+        true,
+      );
+    }
 
     this.readerExternalId = `agenticai-registry-v1-${props.envName}-${stack.account}`;
     const workloadPrincipals = workloadAccountIds.map(
@@ -457,3 +576,98 @@ export class GaPlatformRegistryConstruct extends Construct {
     });
   }
 }
+
+/**
+ * Inline Provider onEvent handler for Custom::AgentRegistryRecordSubmission.
+ *
+ * GA Agent Registry control-plane REST (signing service `agent-registry`):
+ *   GET  /registries/<rid>/records/<recId>
+ *   POST /registries/<rid>/records/<recId>/submit-for-approval
+ * Built-in SigV4 (no @aws-sdk import), the same approach as the Workstream
+ * Gateway's Registry validator: the runtime's bundled SDK version must not
+ * decide whether this newly released service is reachable.
+ *
+ * Create/Update: a DRAFT record is submitted; the call then waits for
+ * APPROVED and fails closed on any other end state, so a deploy never reports
+ * success for a record no Gateway can subscribe to. Delete is a no-op: the
+ * stack retains records, and approval state is not undone.
+ */
+export const RECORD_SUBMITTER_HANDLER = `
+const https = require('https');
+const crypto = require('crypto');
+const NL = String.fromCharCode(10);
+function hmac(key, str) { return crypto.createHmac('sha256', key).update(str, 'utf8').digest(); }
+function hash(str) { return crypto.createHash('sha256').update(str, 'utf8').digest('hex'); }
+
+function call(method, path, body) {
+  const region = process.env.AWS_REGION;
+  const host = 'agent-registry-control.' + region + '.api.aws';
+  const service = 'agent-registry';
+  const payload = body === undefined ? '' : JSON.stringify(body);
+  const amzDate = new Date().toISOString().replace(/[:-]|[.][0-9]{3}/g, '');
+  const dateStamp = amzDate.substring(0, 8);
+  const headers = { host: host, 'x-amz-date': amzDate };
+  if (payload) headers['content-type'] = 'application/json';
+  if (process.env.AWS_SESSION_TOKEN) headers['x-amz-security-token'] = process.env.AWS_SESSION_TOKEN;
+  const keys = Object.keys(headers).sort();
+  const canonicalHeaders = keys.map(function (k) { return k + ':' + headers[k] + NL; }).join('');
+  const signedHeaders = keys.join(';');
+  const canonicalUri = path.split('/').map(function (s) { return s === '' ? '' : encodeURIComponent(decodeURIComponent(s)); }).join('/');
+  const canonicalRequest = [method, canonicalUri, '', canonicalHeaders, signedHeaders, hash(payload)].join(NL);
+  const scope = dateStamp + '/' + region + '/' + service + '/aws4_request';
+  const toSign = ['AWS4-HMAC-SHA256', amzDate, scope, hash(canonicalRequest)].join(NL);
+  const kSigning = hmac(hmac(hmac(hmac('AWS4' + process.env.AWS_SECRET_ACCESS_KEY, dateStamp), region), service), 'aws4_request');
+  const signature = crypto.createHmac('sha256', kSigning).update(toSign, 'utf8').digest('hex');
+  const reqHeaders = Object.assign({}, headers, {
+    Authorization: 'AWS4-HMAC-SHA256 Credential=' + process.env.AWS_ACCESS_KEY_ID + '/' + scope +
+      ', SignedHeaders=' + signedHeaders + ', Signature=' + signature,
+  });
+  delete reqHeaders.host;
+  return new Promise(function (resolve, reject) {
+    const req = https.request({ host: host, path: path, method: method, headers: reqHeaders }, function (res) {
+      const chunks = [];
+      res.on('data', function (c) { chunks.push(c); });
+      res.on('end', function () {
+        const text = Buffer.concat(chunks).toString('utf8');
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(method + ' ' + path + ' HTTP ' + res.statusCode + ': ' + text));
+          return;
+        }
+        resolve(text ? JSON.parse(text) : {});
+      });
+    });
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+exports.handler = async function (event) {
+  const p = event.ResourceProperties || {};
+  const physicalId = 'submit-' + (p.recordId || event.PhysicalResourceId || 'unknown');
+  if (event.RequestType === 'Delete') return { PhysicalResourceId: event.PhysicalResourceId || physicalId };
+  if (!/^[A-Za-z0-9]{16}$/.test(p.registryId || '') || !/^[A-Za-z0-9]{12}$/.test(p.recordId || '')) {
+    throw new Error('AgentRegistryRecordSubmission: registryId/recordId shape is invalid');
+  }
+  const path = '/registries/' + p.registryId + '/records/' + p.recordId;
+  let record = await call('GET', path);
+  if (record.name !== p.toolId) {
+    throw new Error('AgentRegistryRecordSubmission: record ' + p.recordId + ' is ' + record.name + ', expected ' + p.toolId);
+  }
+  if (record.status === 'DRAFT') {
+    await call('POST', path + '/submit-for-approval', {});
+  } else if (record.status !== 'APPROVED' && record.status !== 'PENDING_APPROVAL') {
+    throw new Error('AgentRegistryRecordSubmission: ' + p.toolId + ' is ' + record.status + '; only DRAFT records are submitted');
+  }
+  for (let i = 0; i < 20 && record.status !== 'APPROVED'; i++) {
+    await sleep(3000);
+    record = await call('GET', path);
+  }
+  if (record.status !== 'APPROVED') {
+    throw new Error('AgentRegistryRecordSubmission: ' + p.toolId + ' ended ' + record.status + ' (expected APPROVED under APPROVE_ALL)');
+  }
+  return { PhysicalResourceId: physicalId, Data: { Status: record.status } };
+};
+`;
