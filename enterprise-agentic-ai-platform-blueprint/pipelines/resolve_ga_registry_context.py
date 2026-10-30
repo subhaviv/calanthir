@@ -221,9 +221,37 @@ def user_tags(tags: Mapping[str, str]) -> dict[str, str]:
     }
 
 
-def require_tags(actual: Mapping[str, str], config: ResolverConfig, label: str) -> None:
+ALLOCATION_TAG_KEYS = frozenset(
+    {"application-id", "agent-id", "tenant-id", "cost-centre", "environment"}
+)
+
+
+def registry_owner_tags(actual: Mapping[str, str], config: ResolverConfig) -> dict[str, str]:
+    """Return the Platform allocation that owns the Registry.
+
+    The Registry and its tool records are stamped with the allocation of the
+    Platform stack that publishes them, NOT with the identity of each consumer.
+    Any Workstream (tenant/agent) may subscribe to them, so the consumer's own
+    tags are never compared here; the Workstream Gateway binds tenant/agent on
+    its own resources. The tag set must still be exactly the allocation keys,
+    for the requested environment, so drift fails closed.
+    """
     observed = user_tags(actual)
-    require(observed == config.tags, f"{label} tags differ: {observed}")
+    require(
+        set(observed) == ALLOCATION_TAG_KEYS
+        and all(isinstance(v, str) and v for v in observed.values()),
+        f"Registry tags differ: {observed}",
+    )
+    require(
+        observed["environment"] == config.environment,
+        f"Registry tags differ: {observed}",
+    )
+    return observed
+
+
+def require_tags(actual: Mapping[str, str], owner: Mapping[str, str], label: str) -> None:
+    observed = user_tags(actual)
+    require(observed == dict(owner), f"{label} tags differ: {observed}")
 
 
 def validate_document(
@@ -326,7 +354,7 @@ def resolve_context(aws: Any, config: ResolverConfig) -> dict[str, Any]:
     require(discovery.get("authorizerType") == "AWS_IAM", "Registry authorizer is not AWS_IAM")
     approval = mapping(registry.get("approvalConfiguration"), "approvalConfiguration")
     require(approval.get("autoApprovalRules") == ["APPROVE_ALL"], "Registry approval configuration changed")
-    require_tags(aws.tags(expected_registry_arn), config, "Registry")
+    owner_tags = registry_owner_tags(aws.tags(expected_registry_arn), config)
 
     records: list[dict[str, Any]] = []
     for tool_id in sorted(config.expected_tool_ids):
@@ -352,7 +380,7 @@ def resolve_context(aws: Any, config: ResolverConfig) -> dict[str, Any]:
             record.get("recordVersion") == expected_record_version,
             f"record {tool_id} version does not match catalogueVersion",
         )
-        require_tags(aws.tags(record_arn), config, f"record {tool_id}")
+        require_tags(aws.tags(record_arn), owner_tags, f"record {tool_id}")
         digest = hashlib.sha256(data.encode("utf-8")).hexdigest()
         require(bool(DIGEST_PATTERN.fullmatch(digest)), "descriptor digest failed")
         records.append(

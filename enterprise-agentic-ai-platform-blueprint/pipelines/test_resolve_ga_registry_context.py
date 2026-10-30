@@ -288,6 +288,37 @@ def test_governance_drift_fails_closed(tmp_path: Path, mutate: Any) -> None:
         resolver.resolve_context(FakeAws(cfg, records=records), cfg)
 
 
+def test_other_workstream_can_subscribe_to_platform_owned_records(tmp_path: Path) -> None:
+    # Registry + records carry the Platform allocation; a different consumer
+    # tenant/agent must still resolve them.
+    owner = config(tmp_path)
+    consumer = config(
+        tmp_path,
+        application_id="other-app",
+        agent_id="other-agent",
+        tenant_id="other-tenant",
+        cost_centre="other-cc",
+    )
+    fake = FakeAws(
+        consumer,
+        registry_tags=owner.tags,
+        record_tags={tool_id: owner.tags for tool_id in consumer.expected_tool_ids},
+    )
+    result = resolver.resolve_context(fake, consumer)
+    assert [r["document"]["toolId"] for r in result["records"]] == ["tool-echo", "tool-ping"]
+
+
+def test_registry_environment_and_missing_tags_fail_closed(tmp_path: Path) -> None:
+    cfg = config(tmp_path)
+    with pytest.raises(resolver.ResolutionError, match="Registry tags"):
+        resolver.resolve_context(
+            FakeAws(cfg, registry_tags={**cfg.tags, "environment": "prod"}), cfg
+        )
+    missing = {k: v for k, v in cfg.tags.items() if k != "agent-id"}
+    with pytest.raises(resolver.ResolutionError, match="Registry tags"):
+        resolver.resolve_context(FakeAws(cfg, registry_tags=missing), cfg)
+
+
 def test_system_cloudformation_tags_are_tolerated(tmp_path: Path) -> None:
     cfg = config(tmp_path)
     tags = {**cfg.tags, "aws:cloudformation:stack-name": "Prod-Registry"}
