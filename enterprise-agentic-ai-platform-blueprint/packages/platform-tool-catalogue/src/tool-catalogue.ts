@@ -772,13 +772,29 @@ export function composeAgentCorePolicyDefinitions(
             `Tool '${tool.toolId}' has allowedGroups and therefore requires CUSTOM_JWT PolicyEngine mode.`,
           );
         }
-        statements = iamPrincipals.map((principal) =>
-          agentCorePermit(
-            `principal == AgentCore::IamEntity::"${principal}"`,
-            action,
-            gatewayArn,
-          ),
-        );
+        // An AgentCore Policy holds exactly ONE Cedar statement (a second
+        // `permit` is rejected with "unexpected token `permit`"), so several
+        // callers share one permit: the proven `principal ==` head for one
+        // role, an `is IamEntity` head with an equality disjunction for more.
+        statements =
+          iamPrincipals.length === 1
+            ? [
+                agentCorePermit(
+                  `principal == AgentCore::IamEntity::"${iamPrincipals[0]}"`,
+                  action,
+                  gatewayArn,
+                ),
+              ]
+            : [
+                agentCorePermit(
+                  "principal is AgentCore::IamEntity",
+                  action,
+                  gatewayArn,
+                  iamPrincipals
+                    .map((principal) => `principal == AgentCore::IamEntity::"${principal}"`)
+                    .join(" || "),
+                ),
+              ];
       } else if (tool.allowedGroups && tool.allowedGroups.length > 0) {
         const groupConditions = tool.allowedGroups.map((group) => {
           cedarString(group, `Cognito group for '${tool.toolId}'`);

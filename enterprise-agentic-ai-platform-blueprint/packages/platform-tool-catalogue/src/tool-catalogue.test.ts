@@ -287,6 +287,31 @@ describe('composeAgentCorePolicyDefinitions', () => {
   const gatewayArn =
     'arn:aws:bedrock-agentcore:us-west-2:333333333333:gateway/agenticai-d03-nonprod-demo-primary-gw-abcdefghij';
 
+  it('emits ONE permit per tool for several IAM principals (a Policy holds one statement)', () => {
+    const roles = [
+      'arn:aws:iam::333333333333:role/agent-a-runtime',
+      'arn:aws:iam::333333333333:role/agent-b-runtime',
+    ];
+    const [definition] = composeAgentCorePolicyDefinitions(
+      resolveSubscribedTools(['tool-echo']),
+      {
+        authorizerType: 'AWS_IAM',
+        gatewayArn,
+        policyNamePrefix: 'AgenticAI_nonprod_demo_primary',
+        targetNames: { 'tool-echo': 'target-tool-echo' },
+        iamRoleArns: roles,
+      },
+    );
+    expect(definition.statement.match(/permit\(/g)).toHaveLength(1);
+    expect(definition.statement).toContain('principal is AgentCore::IamEntity');
+    for (const role of ['agent-a-runtime', 'agent-b-runtime']) {
+      expect(definition.statement).toContain(
+        `principal == AgentCore::IamEntity::"arn:aws:sts::333333333333:assumed-role/${role}"`,
+      );
+    }
+    expect(definition.statement).toMatch(/when \{ .+ \|\| .+ \};$/);
+  });
+
   it('emits exact IAM assumed-role principals, qualified actions, and Gateway resources', () => {
     const definitions = composeAgentCorePolicyDefinitions(
       resolveSubscribedTools(['tool-echo']),
