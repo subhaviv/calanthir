@@ -133,7 +133,10 @@ export function stageAwareSynthCommands(
     ...(options.expectedStackArtifactId
       ? [`test -f cdk.out/${shellQuote(options.expectedStackArtifactId)}.template.json`]
       : []),
-    'grep -rq "aws:cloudformation:stack" cdk.out/manifest.json cdk.out/assembly-*/manifest.json 2>/dev/null || grep -rq "aws:cloudformation:stack" cdk.out/',
+    // Recursive over cdk.out/, so it covers manifest.json and every nested
+    // stage assembly's manifest (assembly-*/manifest.json). No stderr
+    // suppression or `||` fallback: a missing stack artifact must fail the step.
+    'grep -rq "aws:cloudformation:stack" cdk.out/',
     validateStageAssembliesCommand(options.expectedStageAssemblyGlobs),
     publishCloudAssemblyFromCheckoutRootCommand(),
   ];
