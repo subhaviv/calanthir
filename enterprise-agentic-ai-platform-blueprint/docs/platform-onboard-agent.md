@@ -60,6 +60,31 @@ RegistryStack` via a context key; commit + push.
   submit (`APPROVE_ALL`); agent records are not submitted by the stack, so submit yours
   (see PLATFORM_SETUP.md). Prod needs a curator. No APPROVED record = NOT discoverable.
 
+## 4. Tool subscriptions — platform-owned tool Gateway (S3/LOB agents)
+
+The S3 LOB pipeline deploys only the LOB's own app, which cannot build a
+Registry-bound Gateway, so the platform deploys it at onboarding with the
+`lob-tool-gateway` stage. Run from the blueprint root, in this order, as
+separate deploys (each needs the previous one live):
+
+1. Resolve the subscriptions (read-only; writes a context file):
+   `python3 pipelines/resolve_ga_registry_context.py --account-id <platform> --region us-east-1 --environment nonprod --application-id <tenant> --agent-id <agentId> --tenant-id <tenant> --cost-centre <tenant> --expected-tool-id <tool-id> [--expected-tool-id ...] --source-revision $(git rev-parse HEAD) --output <ctx.json>`
+2. Deploy `AgenticAI-<tenant>-<agentId>-nonprod-RegistryRoles` with
+   `--context stage=lob-tool-gateway` and the `agenticai/lobGateway/*` keys:
+   `tenantId`, `agentId`, `workloadAccountId`, `platformAccountId`,
+   `registryContextFile`, `toolIds` (JSON array), `callerRoleArns` (JSON array of
+   the LOB runtime role ARNs allowed to call the Gateway).
+3. Add the output `GatewayServiceRoleArn` to `agenticai/gaGatewayServiceRoleArns`,
+   set `agenticai/enableGaGatewayInvokePermissions=true`, and redeploy the
+   platform RegistryStack (`stage=platform`) so the tool aliases trust it.
+4. Wait a few minutes for IAM propagation, then deploy
+   `AgenticAI-<tenant>-<agentId>-nonprod-ToolGateway` with the same context.
+
+The Gateway is AWS_IAM inbound with its PolicyEngine in ENFORCE: only
+`callerRoleArns` see or call the subscribed tools; everyone else gets an empty
+`tools/list` and "denied by default". Hand the LOB the Gateway URL and the
+qualified tool names (`target-<tool-id>___<tool-id>`).
+
 ## Traps
 - **Runnable ≠ discoverable.** The LOB's deploy makes the agent invocable; it appears
   in the registry ONLY after this record deploys. Set the expectation.

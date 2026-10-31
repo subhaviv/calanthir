@@ -1333,7 +1333,13 @@ export class D03WorkstreamGatewayStack extends Stack {
       const createTargetParams = {
         gatewayIdentifier: gatewayIdToken,
         name: targetName,
-        description,
+        // CreateGatewayTarget caps the TARGET description at 200 characters
+        // (live ValidationException). The MCP tool definition below keeps the
+        // full catalogue description, which is what the agent reads.
+        description:
+          description.length <= 200
+            ? description
+            : `${description.slice(0, 197).trimEnd()}...`,
         targetConfiguration: {
           mcp: {
             lambda: {
@@ -1371,6 +1377,13 @@ export class D03WorkstreamGatewayStack extends Stack {
             service: "bedrock-agentcore-control",
             action: "createGatewayTarget",
             parameters: createTargetParams,
+            // Return only targetId to CloudFormation. CreateGatewayTarget and
+            // GetGatewayTarget echo the full inline tool schema, and a large
+            // one (live: tool-coa-query) exceeds CloudFormation's 4 KB
+            // custom-resource response ("Response object is too long"). That
+            // failure lands AFTER AgentCore created the target, so rollback
+            // cannot learn its id and orphans it, which blocks DeleteGateway.
+            outputPaths: ["targetId"],
             // Use the API-returned targetId as the physical id so onDelete can
             // reference it. AgentCore mints a 10-char id (`[0-9a-zA-Z]{10}`);
             // friendly names (like our per-tool kebab) are rejected on delete.
@@ -1383,6 +1396,7 @@ export class D03WorkstreamGatewayStack extends Stack {
               gatewayIdentifier: gatewayIdToken,
               targetId: new PhysicalResourceIdReference(),
             },
+            outputPaths: ["targetId"],
             physicalResourceId: PhysicalResourceId.fromResponse("targetId"),
           },
           onDelete: {
